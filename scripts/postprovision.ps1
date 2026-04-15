@@ -70,6 +70,22 @@ function Get-LogicAppTriggerCallbackUrl {
     return $response.value
 }
 
+function Get-DeploymentLocation {
+    if (-not [string]::IsNullOrWhiteSpace($env:AZURE_LOCATION)) {
+        return $env:AZURE_LOCATION
+    }
+
+    $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
+    $resourceGroupName = $env:AZURE_RESOURCE_GROUP
+    $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourcegroups/$resourceGroupName?api-version=2021-04-01"
+    $resourceGroup = Invoke-AzureManagementJson -Method Get -Uri $uri
+    if ([string]::IsNullOrWhiteSpace($resourceGroup.location)) {
+        throw 'Unable to resolve the Azure location for the current resource group.'
+    }
+
+    return $resourceGroup.location
+}
+
 function Get-TeamsConnectionStatus {
     param(
         [Parameter(Mandatory = $true)]
@@ -108,7 +124,7 @@ function Ensure-TeamsConnection {
 
     $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
     $resourceGroupName = $env:AZURE_RESOURCE_GROUP
-    $location = $env:AZURE_LOCATION
+    $location = Get-DeploymentLocation
     $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Web/connections/${ConnectionName}?api-version=2016-06-01"
     $body = @{
         location   = $location
@@ -133,7 +149,7 @@ function Get-TeamsConsentLink {
 
     $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
     $resourceGroupName = $env:AZURE_RESOURCE_GROUP
-    $location = $env:AZURE_LOCATION
+    $location = Get-DeploymentLocation
     $tenantId = $env:TARGET_TENANT_ID
     $objectId = az ad signed-in-user show --query id -o tsv
     if ([string]::IsNullOrWhiteSpace($objectId)) {

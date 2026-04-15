@@ -66,7 +66,7 @@ function Get-LogicAppTriggerCallbackUrl {
     $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
     $resourceGroupName = $env:AZURE_RESOURCE_GROUP
     $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Logic/workflows/$WorkflowName/triggers/$TriggerName/listCallbackUrl?api-version=2016-06-01"
-    $response = Invoke-AzureManagementJson -Method Post -Uri $uri
+    $response = Invoke-AzureManagementJson -Method Post -Uri $uri -Body @{}
     return $response.value
 }
 

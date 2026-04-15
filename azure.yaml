@@ -9,6 +9,11 @@ workflows:
   up:
     - azd: provision
 hooks:
+  preup:
+    windows:
+      shell: pwsh
+      run: ./scripts/preprovision.ps1
+      interactive: true
   preprovision:
     windows:
       shell: pwsh

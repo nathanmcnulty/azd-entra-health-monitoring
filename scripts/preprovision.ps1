@@ -40,7 +40,7 @@ function Read-ValueWithDefault {
     $displayPrompt = if ([string]::IsNullOrWhiteSpace($DefaultValue)) {
         $Prompt
     } else {
-        "$Prompt [$DefaultValue]"
+        "$Prompt (default: $DefaultValue)"
     }
 
     $value = Read-Host $displayPrompt

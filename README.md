@@ -42,11 +42,12 @@ flowchart LR
 `azd up` runs `azd provision`, which uses project hooks to:
 
 1. Prompt for the resource group name, alert Logic App name, and Teams channel link when they are not already set.
-2. Parse `TEAMS_CHANNEL_LINK` and store the team, channel, and tenant IDs in the `azd` environment.
-3. Provision both Logic App Consumption workflows with system-assigned managed identities.
-4. Provision a Microsoft Teams connection resource.
-5. After the Teams connection is authenticated, grant the alert workflow `HealthMonitoringAlert.Read.All`.
-6. Grant the lifecycle workflow `HealthMonitoringAlertConfig.ReadWrite.All`.
+2. Show recommended defaults inline in the prompts so you can press Enter to accept them or provide your own values.
+3. Parse `TEAMS_CHANNEL_LINK` and store the team, channel, and tenant IDs in the `azd` environment before infrastructure parameters are resolved.
+4. Provision both Logic App Consumption workflows with system-assigned managed identities.
+5. Provision a Microsoft Teams connection resource.
+6. After the Teams connection is authenticated, grant the alert workflow `HealthMonitoringAlert.Read.All`.
+7. Grant the lifecycle workflow `HealthMonitoringAlertConfig.ReadWrite.All`.
 
 ## Authentication
 

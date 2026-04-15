@@ -19,9 +19,6 @@
     },
     "targetChannelDisplayName": {
       "value": "${TARGET_CHANNEL_DISPLAY_NAME}"
-    },
-    "graphSubscriptionClientState": {
-      "value": "${GRAPH_SUBSCRIPTION_CLIENT_STATE}"
     }
   }
 }

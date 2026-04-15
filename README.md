@@ -82,6 +82,8 @@ azd env new <environment-name>
 azd up
 ```
 
+When prompted for `TEAMS_CHANNEL_LINK`, in Microsoft Teams right-click the target channel, select Copy link, and paste that link into the terminal.
+
 3. If `postprovision` prints a Teams consent URL, open it, complete the sign-in flow, and rerun the hook.
 
 ```powershell

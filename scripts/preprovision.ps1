@@ -74,6 +74,7 @@ if ([string]::IsNullOrWhiteSpace($env:LOGIC_APP_NAME)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($env:TEAMS_CHANNEL_LINK)) {
+    Write-Host 'In Microsoft Teams, right-click the target channel, select Copy link, then paste it here.'
     $teamsChannelLink = Read-ValueWithDefault -Prompt 'Paste the Teams channel link'
     if ([string]::IsNullOrWhiteSpace($teamsChannelLink)) {
         throw 'TEAMS_CHANNEL_LINK must be provided before running azd provision.'
@@ -109,9 +110,5 @@ Set-AzdValue -Name 'TARGET_CHANNEL_ID' -Value $targetChannelId
 Set-AzdValue -Name 'TARGET_CHANNEL_DISPLAY_NAME' -Value $targetChannelDisplayName
 Set-AzdValue -Name 'TARGET_TEAM_ID' -Value $targetTeamId
 Set-AzdValue -Name 'TARGET_TENANT_ID' -Value $targetTenantId
-
-if ([string]::IsNullOrWhiteSpace($env:GRAPH_SUBSCRIPTION_CLIENT_STATE)) {
-    Set-AzdValue -Name 'GRAPH_SUBSCRIPTION_CLIENT_STATE' -Value ([guid]::NewGuid().Guid)
-}
 
 Write-Host "Prepared Logic App deployment values for Teams channel '$targetChannelDisplayName'."

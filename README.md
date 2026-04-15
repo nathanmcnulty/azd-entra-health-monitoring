@@ -32,6 +32,8 @@ azd hooks run postprovision
 
 The provisioning run prints the deployed Logic App names, resource group, webhook URL, and Teams connection status in the terminal.
 
+## Architecture
+
 The template provisions two Logic App Consumption workflows:
 
 - `la-entra-health-alerts`
@@ -45,8 +47,6 @@ The template provisions two Logic App Consumption workflows:
   - uses managed identity to create the subscription if missing
   - reauthorizes and renews 10 days before expiration
   - relays renewal failure warnings to the alert workflow starting 7 days before expiration
-
-## Architecture
 
 ```mermaid
 flowchart LR

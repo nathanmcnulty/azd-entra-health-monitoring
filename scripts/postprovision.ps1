@@ -133,6 +133,7 @@ function Get-TeamsConsentLink {
 
     $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
     $resourceGroupName = $env:AZURE_RESOURCE_GROUP
+    $location = $env:AZURE_LOCATION
     $tenantId = $env:TARGET_TENANT_ID
     $objectId = az ad signed-in-user show --query id -o tsv
     if ([string]::IsNullOrWhiteSpace($objectId)) {
@@ -141,6 +142,7 @@ function Get-TeamsConsentLink {
 
     $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Web/connections/${ConnectionName}/listConsentLinks?api-version=2016-06-01"
     $body = @{
+        location   = $location
         parameters = @(
             @{
                 parameterName = 'token'

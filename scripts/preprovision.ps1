@@ -53,17 +53,6 @@ function Read-ValueWithDefault {
 
 Import-AzdEnvironment
 
-$envName = if ([string]::IsNullOrWhiteSpace($env:AZURE_ENV_NAME)) { 'dev' } else { $env:AZURE_ENV_NAME }
-
-if ([string]::IsNullOrWhiteSpace($env:AZURE_RESOURCE_GROUP)) {
-    $resourceGroupName = Read-ValueWithDefault -Prompt 'Azure resource group name' -DefaultValue "rg-$envName"
-    if ([string]::IsNullOrWhiteSpace($resourceGroupName)) {
-        throw 'An Azure resource group name is required.'
-    }
-
-    Set-AzdValue -Name 'AZURE_RESOURCE_GROUP' -Value $resourceGroupName
-}
-
 if ([string]::IsNullOrWhiteSpace($env:LOGIC_APP_NAME)) {
     $logicAppName = Read-ValueWithDefault -Prompt 'Logic App name' -DefaultValue 'la-entra-health-alerts'
     if ([string]::IsNullOrWhiteSpace($logicAppName)) {

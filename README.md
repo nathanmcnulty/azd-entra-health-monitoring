@@ -10,21 +10,7 @@ This `azd` template deploys a secret-free Microsoft Entra Health monitoring solu
 azd init -t nathanmcnulty/azd-entra-health-monitoring
 ```
 
-2. Create an environment.
-
-```powershell
-pwsh ./scripts/init-env.ps1
-```
-
-This creates an `azd` environment with a generated name such as `ehm-a4b2`.
-
-To choose your own environment name instead:
-
-```powershell
-pwsh ./scripts/init-env.ps1 -EnvironmentName my-env
-```
-
-3. Provision the solution.
+2. Provision the solution.
 
 ```powershell
 azd up
@@ -32,7 +18,13 @@ azd up
 
 When prompted for `TEAMS_CHANNEL_LINK`, in Microsoft Teams right-click the target channel, select Copy link, and paste that link into the terminal.
 
-4. If `postprovision` prints a Teams consent URL, open it, complete the sign-in flow, and rerun the hook.
+If you want to avoid the `azd init` environment prompt, provide your own environment name up front:
+
+```powershell
+azd init -t nathanmcnulty/azd-entra-health-monitoring -e my-env
+```
+
+3. If `postprovision` prints a Teams consent URL, open it, complete the sign-in flow, and rerun the hook.
 
 ```powershell
 azd hooks run postprovision

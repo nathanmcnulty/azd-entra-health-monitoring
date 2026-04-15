@@ -11,7 +11,7 @@ param graphSubscriptionClientState string
 
 var resourceToken = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
 var tags = {
-  'azd-env-name': environmentName
+  'entra-health-env': environmentName
 }
 var teamsConnectionName = 'teams-${resourceToken}'
 var workflowDefinition = json(loadTextContent('workflow-definition.json'))

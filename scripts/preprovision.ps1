@@ -21,6 +21,7 @@ function Set-AzdValue {
         [Parameter(Mandatory = $true)]
         [string]$Name,
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string]$Value
     )
 

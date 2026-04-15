@@ -83,23 +83,8 @@ resource lifecycleWorkflow 'Microsoft.Logic/workflows@2019-05-01' = {
       NotificationUrl: {
         value: listCallbackUrl(resourceId('Microsoft.Logic/workflows/triggers', logicApp.name, 'When_a_HTTP_request_is_received'), '2016-06-01').value
       }
-      TargetTeamId: {
-        value: targetTeamId
-      }
-      TargetChannelId: {
-        value: targetChannelId
-      }
       GraphSubscriptionClientState: {
         value: graphSubscriptionClientState
-      }
-      '$connections': {
-        value: {
-          teams: {
-            connectionId: teamsConnection.id
-            connectionName: teamsConnection.name
-            id: managedApiId
-          }
-        }
       }
     }
   }

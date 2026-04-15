@@ -19,6 +19,7 @@ function Set-AzdValue {
         [Parameter(Mandatory = $true)]
         [string]$Name,
         [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
         [string]$Value
     )
 
@@ -46,35 +47,6 @@ function Invoke-AzureManagementJson {
     )
 
     $headers = @{ Authorization = "Bearer $(Get-ManagementToken)" }
-    if ($PSBoundParameters.ContainsKey('Body')) {
-        $jsonBody = $Body | ConvertTo-Json -Depth 20
-        return Invoke-RestMethod -Method $Method -Uri $Uri -Headers $headers -Body $jsonBody -ContentType 'application/json'
-    }
-
-    return Invoke-RestMethod -Method $Method -Uri $Uri -Headers $headers
-}
-
-function Get-AzureCliGraphToken {
-    $token = az account get-access-token --resource-type ms-graph --query accessToken -o tsv
-    if ([string]::IsNullOrWhiteSpace($token)) {
-        throw 'Unable to acquire a Microsoft Graph delegated token from Azure CLI.'
-    }
-
-    return $token
-}
-
-function Invoke-GraphJson {
-    param(
-        [Parameter(Mandatory = $true)]
-        [ValidateSet('GET', 'POST')]
-        [string]$Method,
-        [Parameter(Mandatory = $true)]
-        [string]$Uri,
-        [Parameter(Mandatory = $false)]
-        [object]$Body
-    )
-
-    $headers = @{ Authorization = "Bearer $(Get-AzureCliGraphToken)" }
     if ($PSBoundParameters.ContainsKey('Body')) {
         $jsonBody = $Body | ConvertTo-Json -Depth 20
         return Invoke-RestMethod -Method $Method -Uri $Uri -Headers $headers -Body $jsonBody -ContentType 'application/json'
@@ -161,19 +133,26 @@ function Ensure-ManagedIdentityGraphRoles {
         [string[]]$RoleValues
     )
 
-    $graphServicePrincipal = Invoke-GraphJson -Method GET -Uri "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=appId eq '00000003-0000-0000-c000-000000000000'"
+    $token = az account get-access-token --resource-type ms-graph --query accessToken -o tsv
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        throw 'Unable to acquire a Microsoft Graph delegated token from Azure CLI.'
+    }
+
+    $headers = @{ Authorization = "Bearer $token" }
+
+    $graphServicePrincipal = Invoke-RestMethod -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=appId eq '00000003-0000-0000-c000-000000000000'" -Headers $headers
     $graphSp = $graphServicePrincipal.value | Select-Object -First 1
     if (-not $graphSp) {
         throw 'Microsoft Graph service principal was not found in this tenant.'
     }
 
-    $principalSp = Invoke-GraphJson -Method GET -Uri "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=id eq '$PrincipalId'"
+    $principalSp = Invoke-RestMethod -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals?`$filter=id eq '$PrincipalId'" -Headers $headers
     $principal = $principalSp.value | Select-Object -First 1
     if (-not $principal) {
         throw "Service principal '$PrincipalId' was not found."
     }
 
-    $existingAssignments = Invoke-GraphJson -Method GET -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($principal.id)/appRoleAssignments?`$top=999"
+    $existingAssignments = Invoke-RestMethod -Method Get -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($principal.id)/appRoleAssignments?`$top=999" -Headers $headers
 
     foreach ($roleValue in $RoleValues) {
         $role = @($graphSp.appRoles | Where-Object { $_.value -eq $roleValue -and $_.allowedMemberTypes -contains 'Application' }) | Select-Object -First 1
@@ -187,11 +166,13 @@ function Ensure-ManagedIdentityGraphRoles {
             continue
         }
 
-        Invoke-GraphJson -Method POST -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($principal.id)/appRoleAssignments" -Body @{
+        $jsonBody = @{
             principalId = $principal.id
             resourceId  = $graphSp.id
             appRoleId   = $role.id
-        } | Out-Null
+        } | ConvertTo-Json -Depth 20
+
+        Invoke-RestMethod -Method Post -Uri "https://graph.microsoft.com/v1.0/servicePrincipals/$($principal.id)/appRoleAssignments" -Headers $headers -Body $jsonBody -ContentType 'application/json' | Out-Null
 
         Write-Host "Assigned $roleValue to managed identity $PrincipalId."
     }

@@ -5,18 +5,8 @@
     "NotificationUrl": {
       "type": "String"
     },
-    "TargetTeamId": {
-      "type": "String"
-    },
-    "TargetChannelId": {
-      "type": "String"
-    },
     "GraphSubscriptionClientState": {
       "type": "String"
-    },
-    "$connections": {
-      "type": "Object",
-      "defaultValue": {}
     }
   },
   "triggers": {
@@ -51,7 +41,7 @@
       },
       "inputs": {
         "from": "@body('List_subscriptions')?['value']",
-        "where": "@and(equals(item()?['changeType'], 'created'), or(equals(item()?['resource'], '/reports/healthmonitoring/alerts'), equals(item()?['resource'], 'reports/healthmonitoring/alerts')), equals(item()?['notificationUrl'], parameters('NotificationUrl')))"
+        "where": "@and(equals(item()?['changeType'], 'created'), or(equals(item()?['resource'], '/reports/healthmonitoring/alerts'), equals(item()?['resource'], 'reports/healthmonitoring/alerts')), or(equals(item()?['notificationUrl'], parameters('NotificationUrl')), equals(item()?['clientState'], parameters('GraphSubscriptionClientState'))))"
       }
     },
     "Get_matching_subscription": {
@@ -65,6 +55,11 @@
     },
     "Check_existing_subscription": {
       "type": "If",
+      "runAfter": {
+        "Get_matching_subscription": [
+          "Succeeded"
+        ]
+      },
       "expression": {
         "equals": [
           "@outputs('Get_matching_subscription')",
@@ -102,6 +97,11 @@
           },
           "Check_expiring_soon": {
             "type": "If",
+            "runAfter": {
+              "Compose_expiration": [
+                "Succeeded"
+              ]
+            },
             "expression": {
               "lessOrEquals": [
                 "@ticks(outputs('Compose_expiration'))",
@@ -141,10 +141,10 @@
                   }
                 }
               },
-              "Check_warning_window": {
-                "type": "If",
-                "runAfter": {
-                  "Renew_subscription": [
+                    "Check_warning_window": {
+                      "type": "If",
+                      "runAfter": {
+                        "Renew_subscription": [
                     "Failed"
                   ]
                 },
@@ -153,28 +153,22 @@
                     "@ticks(outputs('Compose_expiration'))",
                     "@ticks(addDays(utcNow(), 7))"
                   ]
-                },
-                "actions": {
-                  "Post_lifecycle_warning": {
-                    "type": "ApiConnection",
-                    "runAfter": {},
-                    "inputs": {
-                      "host": {
-                        "connection": {
-                          "name": "@parameters('$connections')['teams']['connectionId']"
-                        }
                       },
-                      "method": "post",
-                      "path": "/beta/teams/conversation/message/poster/@{encodeURIComponent('User')}/location/@{encodeURIComponent('Channel')}",
-                      "body": {
-                        "recipient": {
-                          "groupId": "@parameters('TargetTeamId')",
-                          "channelId": "@parameters('TargetChannelId')"
-                        },
-                        "messageBody": "@concat('<p class=\"editor-paragraph\"><strong>Microsoft Entra Health subscription renewal failed</strong></p><p class=\"editor-paragraph\">Subscription ', outputs('Get_matching_subscription')?['id'], ' expires at ', outputs('Compose_expiration'), ' UTC. Review Logic App lifecycle workflow permissions and rerun provisioning if needed.</p>')"
-                      }
-                    }
-                  }
+                      "actions": {
+                        "Relay_lifecycle_warning": {
+                          "type": "Http",
+                          "runAfter": {},
+                          "inputs": {
+                            "method": "POST",
+                            "uri": "@parameters('NotificationUrl')",
+                            "body": {
+                              "internalMessage": {
+                                "clientState": "@parameters('GraphSubscriptionClientState')",
+                                "messageBody": "@concat('<p class=\"editor-paragraph\"><strong>Microsoft Entra Health subscription renewal failed</strong></p><p class=\"editor-paragraph\">Subscription ', outputs('Get_matching_subscription')?['id'], ' expires at ', outputs('Compose_expiration'), ' UTC. Review Logic App lifecycle workflow permissions and rerun provisioning if needed.</p>')"
+                              }
+                            }
+                          }
+                        }
                 },
                 "else": {
                   "actions": {}
@@ -183,19 +177,9 @@
             },
             "else": {
               "actions": {}
-            },
-            "runAfter": {
-              "Compose_expiration": [
-                "Succeeded"
-              ]
             }
           }
         }
-      },
-      "runAfter": {
-        "Get_matching_subscription": [
-          "Succeeded"
-        ]
       }
     }
   },

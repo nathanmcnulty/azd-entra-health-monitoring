@@ -1,0 +1,23 @@
+name: entra-health-monitoring
+metadata:
+  template: entra-health-monitoring@0.0.1
+infra:
+  provider: bicep
+  path: ./infra
+  module: main
+workflows:
+  up:
+    - azd: provision
+hooks:
+  preprovision:
+    windows:
+      shell: pwsh
+      run: ./scripts/preprovision.ps1
+      interactive: true
+  postprovision:
+    windows:
+      shell: pwsh
+      run: ./scripts/postprovision.ps1
+      interactive: true
+requiredVersions:
+  azd: ">= 1.23.0"

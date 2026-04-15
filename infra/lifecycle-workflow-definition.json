@@ -1,0 +1,203 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "NotificationUrl": {
+      "type": "String"
+    },
+    "TargetTeamId": {
+      "type": "String"
+    },
+    "TargetChannelId": {
+      "type": "String"
+    },
+    "GraphSubscriptionClientState": {
+      "type": "String"
+    },
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    }
+  },
+  "triggers": {
+    "Recurrence": {
+      "type": "Recurrence",
+      "recurrence": {
+        "frequency": "Day",
+        "interval": 1,
+        "timeZone": "UTC"
+      }
+    }
+  },
+  "actions": {
+    "List_subscriptions": {
+      "type": "Http",
+      "runAfter": {},
+      "inputs": {
+        "method": "GET",
+        "uri": "https://graph.microsoft.com/beta/subscriptions",
+        "authentication": {
+          "type": "ManagedServiceIdentity",
+          "audience": "https://graph.microsoft.com"
+        }
+      }
+    },
+    "Filter_matching_subscription": {
+      "type": "Query",
+      "runAfter": {
+        "List_subscriptions": [
+          "Succeeded"
+        ]
+      },
+      "inputs": {
+        "from": "@body('List_subscriptions')?['value']",
+        "where": "@and(equals(item()?['changeType'], 'created'), or(equals(item()?['resource'], '/reports/healthmonitoring/alerts'), equals(item()?['resource'], 'reports/healthmonitoring/alerts')), equals(item()?['notificationUrl'], parameters('NotificationUrl')))"
+      }
+    },
+    "Get_matching_subscription": {
+      "type": "Compose",
+      "runAfter": {
+        "Filter_matching_subscription": [
+          "Succeeded"
+        ]
+      },
+      "inputs": "@first(body('Filter_matching_subscription'))"
+    },
+    "Check_existing_subscription": {
+      "type": "If",
+      "expression": {
+        "equals": [
+          "@outputs('Get_matching_subscription')",
+          "@null"
+        ]
+      },
+      "actions": {
+        "Create_subscription": {
+          "type": "Http",
+          "runAfter": {},
+          "inputs": {
+            "method": "POST",
+            "uri": "https://graph.microsoft.com/beta/subscriptions",
+            "body": {
+              "changeType": "created",
+              "notificationUrl": "@parameters('NotificationUrl')",
+              "resource": "/reports/healthmonitoring/alerts",
+              "expirationDateTime": "@{addMinutes(utcNow(), 42300)}",
+              "clientState": "@parameters('GraphSubscriptionClientState')",
+              "latestSupportedTlsVersion": "v1_2"
+            },
+            "authentication": {
+              "type": "ManagedServiceIdentity",
+              "audience": "https://graph.microsoft.com"
+            }
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Compose_expiration": {
+            "type": "Compose",
+            "runAfter": {},
+            "inputs": "@outputs('Get_matching_subscription')?['expirationDateTime']"
+          },
+          "Check_expiring_soon": {
+            "type": "If",
+            "expression": {
+              "lessOrEquals": [
+                "@ticks(outputs('Compose_expiration'))",
+                "@ticks(addDays(utcNow(), 10))"
+              ]
+            },
+            "actions": {
+              "Reauthorize_subscription": {
+                "type": "Http",
+                "runAfter": {},
+                "inputs": {
+                  "method": "POST",
+                  "uri": "https://graph.microsoft.com/beta/subscriptions/@{outputs('Get_matching_subscription')?['id']}/reauthorize",
+                  "authentication": {
+                    "type": "ManagedServiceIdentity",
+                    "audience": "https://graph.microsoft.com"
+                  }
+                }
+              },
+              "Renew_subscription": {
+                "type": "Http",
+                "runAfter": {
+                  "Reauthorize_subscription": [
+                    "Succeeded",
+                    "Failed"
+                  ]
+                },
+                "inputs": {
+                  "method": "PATCH",
+                  "uri": "https://graph.microsoft.com/beta/subscriptions/@{outputs('Get_matching_subscription')?['id']}",
+                  "body": {
+                    "expirationDateTime": "@{addMinutes(utcNow(), 42300)}"
+                  },
+                  "authentication": {
+                    "type": "ManagedServiceIdentity",
+                    "audience": "https://graph.microsoft.com"
+                  }
+                }
+              },
+              "Check_warning_window": {
+                "type": "If",
+                "runAfter": {
+                  "Renew_subscription": [
+                    "Failed"
+                  ]
+                },
+                "expression": {
+                  "lessOrEquals": [
+                    "@ticks(outputs('Compose_expiration'))",
+                    "@ticks(addDays(utcNow(), 7))"
+                  ]
+                },
+                "actions": {
+                  "Post_lifecycle_warning": {
+                    "type": "ApiConnection",
+                    "runAfter": {},
+                    "inputs": {
+                      "host": {
+                        "connection": {
+                          "name": "@parameters('$connections')['teams']['connectionId']"
+                        }
+                      },
+                      "method": "post",
+                      "path": "/beta/teams/conversation/message/poster/@{encodeURIComponent('User')}/location/@{encodeURIComponent('Channel')}",
+                      "body": {
+                        "recipient": {
+                          "groupId": "@parameters('TargetTeamId')",
+                          "channelId": "@parameters('TargetChannelId')"
+                        },
+                        "messageBody": "@concat('<p class=\"editor-paragraph\"><strong>Microsoft Entra Health subscription renewal failed</strong></p><p class=\"editor-paragraph\">Subscription ', outputs('Get_matching_subscription')?['id'], ' expires at ', outputs('Compose_expiration'), ' UTC. Review Logic App lifecycle workflow permissions and rerun provisioning if needed.</p>')"
+                      }
+                    }
+                  }
+                },
+                "else": {
+                  "actions": {}
+                }
+              }
+            },
+            "else": {
+              "actions": {}
+            },
+            "runAfter": {
+              "Compose_expiration": [
+                "Succeeded"
+              ]
+            }
+          }
+        }
+      },
+      "runAfter": {
+        "Get_matching_subscription": [
+          "Succeeded"
+        ]
+      }
+    }
+  },
+  "outputs": {}
+}

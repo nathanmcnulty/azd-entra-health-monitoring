@@ -1,0 +1,246 @@
+{
+  "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "TargetTeamId": {
+      "type": "String"
+    },
+    "TargetChannelId": {
+      "type": "String"
+    },
+    "TargetChannelDisplayName": {
+      "type": "String"
+    },
+    "GraphSubscriptionClientState": {
+      "type": "String"
+    },
+    "$connections": {
+      "type": "Object",
+      "defaultValue": {}
+    }
+  },
+  "triggers": {
+    "When_a_HTTP_request_is_received": {
+      "type": "Request",
+      "kind": "Http",
+      "inputs": {
+        "method": "POST",
+        "schema": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "actions": {
+    "Check_for_validation_token": {
+      "type": "If",
+      "expression": {
+        "and": [
+          {
+            "not": {
+              "equals": [
+                "@triggerOutputs()?['queries']?['validationToken']",
+                "@null"
+              ]
+            }
+          },
+          {
+            "not": {
+              "equals": [
+                "@triggerOutputs()?['queries']?['validationToken']",
+                ""
+              ]
+            }
+          }
+        ]
+      },
+      "actions": {
+        "Return_validation_token": {
+          "type": "Response",
+          "kind": "Http",
+          "runAfter": {},
+          "inputs": {
+            "statusCode": 200,
+            "headers": {
+              "Content-Type": "text/plain"
+            },
+            "body": "@decodeUriComponent(triggerOutputs()?['queries']?['validationToken'])"
+          }
+        }
+      },
+      "else": {
+        "actions": {
+          "Acknowledge_notification": {
+            "type": "Response",
+            "kind": "Http",
+            "runAfter": {},
+            "inputs": {
+              "statusCode": 202,
+              "body": {
+                "accepted": true
+              }
+            }
+          },
+          "For_each_notification": {
+            "type": "Foreach",
+            "runAfter": {
+              "Acknowledge_notification": [
+                "Succeeded"
+              ]
+            },
+            "foreach": "@coalesce(triggerBody()?['value'], createArray())",
+            "actions": {
+              "Check_notification": {
+                "type": "If",
+                "expression": {
+                  "and": [
+                    {
+                      "equals": [
+                        "@items('For_each_notification')?['clientState']",
+                        "@parameters('GraphSubscriptionClientState')"
+                      ]
+                    },
+                    {
+                      "equals": [
+                        "@toLower(items('For_each_notification')?['changeType'])",
+                        "created"
+                      ]
+                    }
+                  ]
+                },
+                "actions": {
+                  "Compose_alert_id": {
+                    "type": "Compose",
+                    "runAfter": {},
+                    "inputs": "@coalesce(items('For_each_notification')?['resourceData']?['id'], last(split(items('For_each_notification')?['resource'], '/')))"
+                  },
+                  "Get_alert_details": {
+                    "type": "Http",
+                    "runAfter": {
+                      "Compose_alert_id": [
+                        "Succeeded"
+                      ]
+                    },
+                    "inputs": {
+                      "method": "GET",
+                      "uri": "https://graph.microsoft.com/beta/reports/healthMonitoring/alerts/@{outputs('Compose_alert_id')}?$select=id,alertType,scenario,category,createdDateTime,state,enrichment,documentation",
+                      "headers": {
+                        "Prefer": "include-unknown-enum-members"
+                      },
+                      "authentication": {
+                        "type": "ManagedServiceIdentity",
+                        "audience": "https://graph.microsoft.com"
+                      }
+                    },
+                    "runtimeConfiguration": {
+                      "contentTransfer": {
+                        "transferMode": "Chunked"
+                      }
+                    }
+                  },
+                  "Compose_message": {
+                    "type": "Compose",
+                    "runAfter": {
+                      "Get_alert_details": [
+                        "Succeeded"
+                      ]
+                    },
+                    "inputs": "@concat('<p class=\"editor-paragraph\"><strong>Microsoft Entra Health alert</strong></p><p class=\"editor-paragraph\"><strong>Channel:</strong> ', parameters('TargetChannelDisplayName'), '<br><strong>Type:</strong> ', coalesce(body('Get_alert_details')?['alertType'], 'unknown'), '<br><strong>Scenario:</strong> ', coalesce(body('Get_alert_details')?['scenario'], 'unknown'), '<br><strong>Category:</strong> ', coalesce(body('Get_alert_details')?['category'], 'unknown'), '<br><strong>State:</strong> ', coalesce(body('Get_alert_details')?['state'], 'unknown'), if(empty(body('Get_alert_details')?['createdDateTime']), '', concat('<br><strong>Created UTC:</strong> ', body('Get_alert_details')?['createdDateTime'])), if(empty(items('For_each_notification')?['subscriptionExpirationDateTime']), '', concat('<br><strong>Subscription Expires:</strong> ', items('For_each_notification')?['subscriptionExpirationDateTime'])), '<br><strong>Alert Id:</strong> ', body('Get_alert_details')?['id'], '</p>')"
+                  },
+                  "Post_message_in_a_chat_or_channel": {
+                    "type": "ApiConnection",
+                    "runAfter": {
+                      "Compose_message": [
+                        "Succeeded"
+                      ]
+                    },
+                    "inputs": {
+                      "host": {
+                        "connection": {
+                          "name": "@parameters('$connections')['teams']['connectionId']"
+                        }
+                      },
+                      "method": "post",
+                      "path": "/beta/teams/conversation/message/poster/@{encodeURIComponent('User')}/location/@{encodeURIComponent('Channel')}",
+                      "body": {
+                        "recipient": {
+                          "groupId": "@parameters('TargetTeamId')",
+                          "channelId": "@parameters('TargetChannelId')"
+                        },
+                        "messageBody": "@outputs('Compose_message')"
+                      }
+                    }
+                  },
+                  "Check_near_expiration": {
+                    "type": "If",
+                    "runAfter": {
+                      "Post_message_in_a_chat_or_channel": [
+                        "Succeeded"
+                      ]
+                    },
+                    "expression": {
+                      "and": [
+                        {
+                          "not": {
+                            "equals": [
+                              "@items('For_each_notification')?['subscriptionExpirationDateTime']",
+                              "@null"
+                            ]
+                          }
+                        },
+                        {
+                          "lessOrEquals": [
+                            "@ticks(items('For_each_notification')?['subscriptionExpirationDateTime'])",
+                            "@ticks(addDays(utcNow(), 7))"
+                          ]
+                        }
+                      ]
+                    },
+                    "actions": {
+                      "Post_near_expiration_warning": {
+                        "type": "ApiConnection",
+                        "runAfter": {},
+                        "inputs": {
+                          "host": {
+                            "connection": {
+                              "name": "@parameters('$connections')['teams']['connectionId']"
+                            }
+                          },
+                          "method": "post",
+                          "path": "/beta/teams/conversation/message/poster/@{encodeURIComponent('User')}/location/@{encodeURIComponent('Channel')}",
+                          "body": {
+                            "recipient": {
+                              "groupId": "@parameters('TargetTeamId')",
+                              "channelId": "@parameters('TargetChannelId')"
+                            },
+                            "messageBody": "@concat('<p class=\"editor-paragraph\"><strong>Microsoft Entra Health subscription expires soon</strong></p><p class=\"editor-paragraph\">The current subscription expires at ', items('For_each_notification')?['subscriptionExpirationDateTime'], ' UTC. Review the graph subscription management workflow if renewal is not succeeding.</p>')"
+                          }
+                        }
+                      }
+                    },
+                    "else": {
+                      "actions": {}
+                    }
+                  }
+                },
+                "else": {
+                  "actions": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "runAfter": {}
+    }
+  },
+  "outputs": {}
+}

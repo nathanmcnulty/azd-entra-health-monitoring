@@ -70,6 +70,36 @@ function Get-LogicAppTriggerCallbackUrl {
     return $response.value
 }
 
+function Get-TeamsConnectionStatus {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ConnectionName
+    )
+
+    $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
+    $resourceGroupName = $env:AZURE_RESOURCE_GROUP
+    $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Web/connections/${ConnectionName}?api-version=2016-06-01"
+    $connection = Invoke-AzureManagementJson -Method Get -Uri $uri
+    return ($connection.properties.statuses | Select-Object -First 1).status
+}
+
+function Write-DeploymentSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$NotificationUrl,
+        [Parameter(Mandatory = $true)]
+        [string]$ConnectionStatus
+    )
+
+    Write-Host 'Deployment summary:'
+    Write-Host "  Alert Logic App: $($env:LOGIC_APP_NAME)"
+    Write-Host "  Lifecycle Logic App: $($env:LIFECYCLE_LOGIC_APP_NAME)"
+    Write-Host "  Resource Group: $($env:AZURE_RESOURCE_GROUP)"
+    Write-Host "  Webhook URL: $NotificationUrl"
+    Write-Host "  Teams Connection: $($env:TEAMS_CONNECTION_NAME)"
+    Write-Host "  Teams Connection Status: $ConnectionStatus"
+}
+
 function Ensure-TeamsConnection {
     param(
         [Parameter(Mandatory = $true)]
@@ -198,5 +228,8 @@ if ($null -ne $consentLink -and $consentLink.status -ne 'Authenticated' -and -no
 
 Ensure-ManagedIdentityGraphRoles -PrincipalId $env:LOGIC_APP_PRINCIPAL_ID -RoleValues @('HealthMonitoringAlert.Read.All')
 Ensure-ManagedIdentityGraphRoles -PrincipalId $env:LIFECYCLE_LOGIC_APP_PRINCIPAL_ID -RoleValues @('HealthMonitoringAlertConfig.ReadWrite.All')
+
+$connectionStatus = Get-TeamsConnectionStatus -ConnectionName $env:TEAMS_CONNECTION_NAME
+Write-DeploymentSummary -NotificationUrl $notificationUrl -ConnectionStatus $connectionStatus
 
 Write-Host 'Logic App bootstrap is complete. Graph subscription lifecycle is handled by the lifecycle workflow managed identity.'

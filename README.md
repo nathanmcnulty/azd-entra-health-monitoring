@@ -1,6 +1,46 @@
 # Entra Health Monitoring
 
-This `azd` project deploys a secret-free Microsoft Entra Health notification pipeline with two Logic App Consumption workflows:
+This `azd` template deploys a secret-free Microsoft Entra Health monitoring solution that subscribes to Microsoft Graph health alerts, posts them to a Microsoft Teams channel, and keeps the Graph subscription healthy with a companion lifecycle workflow. It uses Logic App managed identities for Microsoft Graph access and does not require an app registration or client secret.
+
+## Quick Start
+
+1. Clone the template.
+
+```powershell
+azd init -t nathanmcnulty/azd-entra-health-monitoring
+```
+
+2. Create an environment.
+
+```powershell
+pwsh ./scripts/init-env.ps1
+```
+
+This creates an `azd` environment with a generated name such as `ehm-a4b2`.
+
+To choose your own environment name instead:
+
+```powershell
+pwsh ./scripts/init-env.ps1 -EnvironmentName my-env
+```
+
+3. Provision the solution.
+
+```powershell
+azd up
+```
+
+When prompted for `TEAMS_CHANNEL_LINK`, in Microsoft Teams right-click the target channel, select Copy link, and paste that link into the terminal.
+
+4. If `postprovision` prints a Teams consent URL, open it, complete the sign-in flow, and rerun the hook.
+
+```powershell
+azd hooks run postprovision
+```
+
+The provisioning run prints the deployed Logic App names, resource group, webhook URL, and Teams connection status in the terminal.
+
+The template provisions two Logic App Consumption workflows:
 
 - `la-entra-health-alerts`
   - receives Microsoft Graph change notifications for `/beta/reports/healthmonitoring/alerts`
@@ -69,47 +109,3 @@ The user provides:
 - `TEAMS_CHANNEL_LINK`
 
 The project derives the team ID, channel ID, tenant ID, webhook URL, Logic App principal IDs, and resource IDs automatically.
-
-## Usage
-
-1. Create an environment.
-
-```powershell
-azd env new <environment-name>
-```
-
-2. Provision the solution.
-
-```powershell
-azd up
-```
-
-When prompted for `TEAMS_CHANNEL_LINK`, in Microsoft Teams right-click the target channel, select Copy link, and paste that link into the terminal.
-
-3. If `postprovision` prints a Teams consent URL, open it, complete the sign-in flow, and rerun the hook.
-
-```powershell
-azd hooks run postprovision
-```
-
-4. Check deployment status.
-
-```powershell
-pwsh ./scripts/status.ps1
-```
-
-## Status Output
-
-`status.ps1` prints:
-
-- alert Logic App name
-- lifecycle Logic App name
-- resource group
-- webhook URL
-- Teams connection status
-- latest lifecycle workflow run status and start time
-
-## Notes
-
-- No app registration or app secret is required for the deployed solution.
-- `la-graph-subscription-management` is intended to be the supported owner for this app's Graph subscription lifecycle.

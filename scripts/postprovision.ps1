@@ -66,7 +66,7 @@ function Get-LogicAppTriggerCallbackUrl {
     $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
     $resourceGroupName = $env:AZURE_RESOURCE_GROUP
     $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Logic/workflows/$WorkflowName/triggers/$TriggerName/listCallbackUrl?api-version=2016-06-01"
-    $response = Invoke-AzureManagementJson -Method Post -Uri $uri -Body @{}
+    $response = Invoke-AzureManagementJson -Method Post -Uri $uri
     return $response.value
 }
 
@@ -77,7 +77,7 @@ function Get-DeploymentLocation {
 
     $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
     $resourceGroupName = $env:AZURE_RESOURCE_GROUP
-    $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourcegroups/$resourceGroupName?api-version=2021-04-01"
+    $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourcegroups/${resourceGroupName}?api-version=2021-04-01"
     $resourceGroup = Invoke-AzureManagementJson -Method Get -Uri $uri
     if ([string]::IsNullOrWhiteSpace($resourceGroup.location)) {
         throw 'Unable to resolve the Azure location for the current resource group.'

@@ -108,6 +108,52 @@ function Get-TeamsConnectionStatus {
     return ($connection.properties.statuses | Select-Object -First 1).status
 }
 
+function Test-TeamsConnectionReady {
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$ConnectionName,
+        [Parameter(Mandatory = $false)]
+        [string]$Status
+    )
+
+    $readyStatuses = @('Authenticated', 'Connected', 'Ready')
+    if (-not $PSBoundParameters.ContainsKey('Status')) {
+        $status = Get-TeamsConnectionStatus -ConnectionName $ConnectionName
+    }
+
+    return $status -in $readyStatuses
+}
+
+function Wait-ForTeamsConnectionAuthorization {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ConnectionName,
+        [Parameter(Mandatory = $true)]
+        [string]$ConsentUrl
+    )
+
+    Write-Warning 'Follow this link to complete the Teams connection setup for the Logic App.'
+    Write-Warning 'Use the account that should appear as the sender for messages posted to the Teams channel.'
+    Write-Host ''
+    Write-Host $ConsentUrl
+    Write-Host ''
+
+    while ($true) {
+        $response = Read-Host 'Press Enter after completing the browser consent flow, or type skip to exit'
+        if ($response.Trim().ToLowerInvariant() -eq 'skip') {
+            return $false
+        }
+
+        $status = Get-TeamsConnectionStatus -ConnectionName $ConnectionName
+        if (Test-TeamsConnectionReady -Status $status) {
+            return $true
+        }
+
+        $displayStatus = if ([string]::IsNullOrWhiteSpace($status)) { '<unknown>' } else { $status }
+        Write-Warning "Teams connection status is '$displayStatus'. Finish the browser consent flow from the link above, then press Enter to check again."
+    }
+}
+
 function Write-DeploymentSummary {
     param(
         [Parameter(Mandatory = $true)]
@@ -247,9 +293,10 @@ Ensure-TeamsConnection -ConnectionName $env:TEAMS_CONNECTION_NAME
 $consentLink = Get-TeamsConsentLink -ConnectionName $env:TEAMS_CONNECTION_NAME
 
 if ($null -ne $consentLink -and $consentLink.status -ne 'Authenticated' -and -not [string]::IsNullOrWhiteSpace($consentLink.link)) {
-    Write-Warning "Authorize the Teams connection by opening: $($consentLink.link)"
-    Write-Warning 'After authorizing the connection, rerun: azd hooks run postprovision'
-    return
+    if (-not (Wait-ForTeamsConnectionAuthorization -ConnectionName $env:TEAMS_CONNECTION_NAME -ConsentUrl $consentLink.link)) {
+        Write-Warning 'Teams connection authorization was skipped. Rerun: azd hooks run postprovision'
+        return
+    }
 }
 
 Ensure-ManagedIdentityGraphRoles -PrincipalId $env:LOGIC_APP_PRINCIPAL_ID -RoleValues @('HealthMonitoringAlert.Read.All')

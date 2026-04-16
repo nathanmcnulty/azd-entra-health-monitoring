@@ -18,13 +18,9 @@ azd up
 
 When prompted for `TEAMS_CHANNEL_LINK`, in Microsoft Teams right-click the target channel, select Copy link, and paste that link into the terminal.
 
-3. If `postprovision` prints a Teams consent URL, open it, complete the sign-in flow, and rerun the hook.
+3. When `postprovision` prints a Teams consent URL, open it, complete the sign-in flow as the user/service account the chat should come from (not the admin), return to the terminal, and press Enter when prompted. The hook waits for the connection to report ready and then continues.
 
-```powershell
-azd hooks run postprovision
-```
-
-The provisioning run prints the deployed Logic App names, resource group, webhook URL, and Teams connection status in the terminal.
+When finished, the provisioning run prints the deployed Logic App names, resource group, webhook URL, and Teams connection status in the terminal.
 
 ## Architecture
 
@@ -73,8 +69,9 @@ flowchart LR
 4. Prompt for the Azure subscription and let you select or create the resource group through the built-in `azd` experience.
 5. Provision both Logic App Consumption workflows with system-assigned managed identities.
 6. Provision a Microsoft Teams connection resource.
-7. After the Teams connection is authenticated, grant the alert workflow `HealthMonitoringAlert.Read.All`.
-8. Grant the lifecycle workflow `HealthMonitoringAlertConfig.ReadWrite.All`.
+7. If the Teams connection needs consent, pause and wait for you to complete the browser flow and press Enter.
+8. After the Teams connection is authenticated, grant the alert workflow `HealthMonitoringAlert.Read.All`.
+9. Grant the lifecycle workflow `HealthMonitoringAlertConfig.ReadWrite.All`.
 
 ## Authentication
 

@@ -47,9 +47,18 @@ function Invoke-AzureManagementJson {
     )
 
     $headers = @{ Authorization = "Bearer $(Get-ManagementToken)" }
+    $debugRequests = $env:AZD_POSTPROVISION_DEBUG -eq '1'
     if ($PSBoundParameters.ContainsKey('Body')) {
         $jsonBody = $Body | ConvertTo-Json -Depth 20
+        if ($debugRequests) {
+            Write-Host "ARM $Method $Uri"
+            Write-Host $jsonBody
+        }
         return Invoke-RestMethod -Method $Method -Uri $Uri -Headers $headers -Body $jsonBody -ContentType 'application/json'
+    }
+
+    if ($debugRequests) {
+        Write-Host "ARM $Method $Uri"
     }
 
     return Invoke-RestMethod -Method $Method -Uri $Uri -Headers $headers
@@ -158,7 +167,6 @@ function Get-TeamsConsentLink {
 
     $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Web/connections/${ConnectionName}/listConsentLinks?api-version=2016-06-01"
     $body = @{
-        location   = $location
         parameters = @(
             @{
                 parameterName = 'token'

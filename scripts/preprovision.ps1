@@ -95,6 +95,14 @@ if ([string]::IsNullOrWhiteSpace($targetTeamId) -or [string]::IsNullOrWhiteSpace
     throw 'Unable to derive groupId or tenantId from TEAMS_CHANNEL_LINK.'
 }
 
+if ([string]::IsNullOrWhiteSpace($env:AZURE_TENANT_ID)) {
+    throw 'AZURE_TENANT_ID is required to validate the Teams channel tenant.'
+}
+
+if ($targetTenantId -ne $env:AZURE_TENANT_ID) {
+    throw "The Teams channel tenant '$targetTenantId' does not match the selected Azure tenant '$($env:AZURE_TENANT_ID)'."
+}
+
 Set-AzdValue -Name 'TARGET_CHANNEL_ID' -Value $targetChannelId
 Set-AzdValue -Name 'TARGET_CHANNEL_DISPLAY_NAME' -Value $targetChannelDisplayName
 Set-AzdValue -Name 'TARGET_TEAM_ID' -Value $targetTeamId

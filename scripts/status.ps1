@@ -15,7 +15,11 @@ function Import-AzdEnvironment {
 }
 
 function Get-ManagementToken {
-    $token = az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv
+    if ([string]::IsNullOrWhiteSpace($env:AZURE_SUBSCRIPTION_ID)) {
+        throw 'AZURE_SUBSCRIPTION_ID is required to acquire an Azure Resource Manager token.'
+    }
+
+    $token = az account get-access-token --subscription $env:AZURE_SUBSCRIPTION_ID --resource https://management.azure.com/ --query accessToken -o tsv
     if ([string]::IsNullOrWhiteSpace($token)) {
         throw 'Unable to acquire an Azure Resource Manager token from Azure CLI.'
     }

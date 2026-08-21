@@ -28,7 +28,11 @@ function Set-AzdValue {
 }
 
 function Get-ManagementToken {
-    $token = az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv
+    if ([string]::IsNullOrWhiteSpace($env:AZURE_SUBSCRIPTION_ID)) {
+        throw 'AZURE_SUBSCRIPTION_ID is required to acquire an Azure Resource Manager token.'
+    }
+
+    $token = az account get-access-token --subscription $env:AZURE_SUBSCRIPTION_ID --resource https://management.azure.com/ --query accessToken -o tsv
     if ([string]::IsNullOrWhiteSpace($token)) {
         throw 'Unable to acquire an Azure Resource Manager token from Azure CLI.'
     }
@@ -206,8 +210,17 @@ function Get-TeamsConsentLink {
     $resourceGroupName = $env:AZURE_RESOURCE_GROUP
     $location = Get-DeploymentLocation
     $tenantId = $env:TARGET_TENANT_ID
-    $objectId = az ad signed-in-user show --query id -o tsv
-    if ([string]::IsNullOrWhiteSpace($objectId)) {
+    if ([string]::IsNullOrWhiteSpace($tenantId)) {
+        throw 'TARGET_TENANT_ID is required to resolve the signed-in Azure CLI user.'
+    }
+
+    $token = az account get-access-token --tenant $tenantId --resource-type ms-graph --query accessToken -o tsv
+    if ([string]::IsNullOrWhiteSpace($token)) {
+        throw "Unable to acquire a Microsoft Graph token for tenant '$tenantId'."
+    }
+
+    $signedInUser = Invoke-RestMethod -Method Get -Uri 'https://graph.microsoft.com/v1.0/me?$select=id' -Headers @{ Authorization = "Bearer $token" }
+    if ([string]::IsNullOrWhiteSpace($signedInUser.id)) {
         throw 'Unable to resolve the signed-in Azure CLI user object ID.'
     }
 
@@ -217,7 +230,7 @@ function Get-TeamsConsentLink {
             @{
                 parameterName = 'token'
                 redirectUrl   = 'https://portal.azure.com'
-                objectId      = $objectId
+                objectId      = $signedInUser.id
                 tenantId      = $tenantId
             }
         )
@@ -235,7 +248,12 @@ function Ensure-ManagedIdentityGraphRoles {
         [string[]]$RoleValues
     )
 
-    $token = az account get-access-token --resource-type ms-graph --query accessToken -o tsv
+    $tenantId = $env:TARGET_TENANT_ID
+    if ([string]::IsNullOrWhiteSpace($tenantId)) {
+        throw 'TARGET_TENANT_ID is required to assign Microsoft Graph roles.'
+    }
+
+    $token = az account get-access-token --tenant $tenantId --resource-type ms-graph --query accessToken -o tsv
     if ([string]::IsNullOrWhiteSpace($token)) {
         throw 'Unable to acquire a Microsoft Graph delegated token from Azure CLI.'
     }

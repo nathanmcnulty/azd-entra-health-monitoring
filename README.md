@@ -1,94 +1,90 @@
 # Entra Health Monitoring
 
-This `azd` template deploys a secret-free Microsoft Entra Health monitoring solution that subscribes to Microsoft Graph health alerts, posts them to a Microsoft Teams channel, and keeps the Graph subscription healthy with a companion lifecycle workflow. It uses Logic App managed identities for Microsoft Graph access and does not require an app registration or client secret.
+Deploy a secret-free Azure workflow that forwards Microsoft Entra health alerts to a Microsoft Teams channel and renews its Microsoft Graph subscription.
 
-## Quick Start
+This template helps an administrator:
 
-1. Clone the template.
+1. Receive Microsoft Entra health alert notifications in Teams.
+2. Keep the Graph health-alert subscription renewed automatically.
+3. Monitor connection and lifecycle status without storing an app secret.
+
+> This is a beta Graph health-monitoring integration. It uses Microsoft Graph `/beta` resources and requires explicit consent for the managed-identity permissions described below.
+
+## Quickstart
+
+### Before you begin
+
+Install:
+
+- [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) 1.23.0 or later
+- [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
+- PowerShell 7 or later on Windows
+
+Use an administrator who can select or create the Azure resource group and grant Microsoft Graph application permissions. The deployment needs `HealthMonitoringAlert.Read.All` for the alert workflow and `HealthMonitoringAlertConfig.ReadWrite.All` for the lifecycle workflow. Your organization may require a Privileged Role Administrator or Global Administrator to grant that consent.
+
+Have a Microsoft Teams channel ready. During setup, copy its channel link. A user or service account must complete the browser consent for the Teams connection; use the identity that should appear as the sender of alert messages.
+
+The normal Azure CLI and operating-system/browser sign-in flows are used. Cached sessions are reused when they match the selected tenant. Device-code authentication is never used.
+
+### Deploy
 
 ```powershell
-azd init -t nathanmcnulty/azd-entra-health-monitoring
+azd init -t nathanmcnulty/azd-entra-health-monitoring && azd up
 ```
 
-2. Provision the solution.
+The guided setup asks for an alert Logic App name and Teams channel link, lets `azd` select or create the resource group, and pauses for Teams browser consent when required. It validates that the Teams link belongs to the selected Azure tenant before provisioning.
 
-```powershell
-azd up
-```
+## What gets deployed
 
-When prompted for `TEAMS_CHANNEL_LINK`, in Microsoft Teams right-click the target channel, select Copy link, and paste that link into the terminal.
+Two Logic App Consumption workflows and one Teams API connection are created:
 
-3. When `postprovision` prints a Teams consent URL, open it, complete the sign-in flow as the user/service account the chat should come from (not the admin), return to the terminal, and press Enter when prompted. The hook waits for the connection to report ready and then continues.
+- An alert workflow receives Graph health-alert change notifications, reads alert details with its managed identity, and posts them to Teams.
+- A lifecycle workflow runs daily, creates the Graph subscription when missing, renews it before expiration, and relays renewal warnings to the alert workflow.
+- System-assigned managed identities are granted only the two Graph application roles listed above.
 
-When finished, the provisioning run prints the deployed Logic App names, resource group, webhook URL, and Teams connection status in the terminal.
-
-## Architecture
-
-The template provisions two Logic App Consumption workflows:
-
-- `la-entra-health-alerts`
-  - receives Microsoft Graph change notifications for `/beta/reports/healthmonitoring/alerts`
-  - validates the webhook handshake and acknowledges notifications quickly
-  - reads alert details with its managed identity
-  - posts alerts to a Teams channel
-  - posts a warning when a delivered notification shows the subscription expires in 7 days or less
-- `la-graph-subscription-management`
-  - runs daily
-  - uses managed identity to create the subscription if missing
-  - reauthorizes and renews 10 days before expiration
-  - relays renewal failure warnings to the alert workflow starting 7 days before expiration
+The deployment is secret-free: it does not create an app registration or client secret. The Teams connection is user-authorized during setup.
 
 ```mermaid
 flowchart LR
-    G[Microsoft Graph<br/>Entra Health alerts] --> S[Graph subscription]
-    S --> A[Alert Logic App<br/>la-entra-health-alerts]
-    A --> D[Get alert details<br/>Managed identity]
-    D --> T[Teams channel]
-    L[Lifecycle warnings] --> A
+  G[Microsoft Graph beta health alerts] --> S[Graph subscription]
+  S --> A[Alert Logic App]
+  A --> T[Teams channel]
+  L[Daily lifecycle Logic App] --> S
+  L --> A
 ```
 
-```mermaid
-flowchart LR
-    R[Daily recurrence] --> L[Lifecycle Logic App<br/>la-graph-subscription-management]
-    L --> Q[List subscriptions<br/>Managed identity]
-    Q --> C{Match found?}
-    C -- No --> N[Create subscription]
-    C -- Yes --> E{Expiring within 10 days?}
-    E -- Yes --> Z[Reauthorize and renew]
-    E -- No --> X[Exit]
-    Z --> T[Relay warning to alert workflow<br/>within 7 days]
+## Verify the deployment
+
+After `azd up`:
+
+1. Confirm the Teams connection reports `Authenticated`, `Connected`, or `Ready`.
+2. Check the printed Logic App names and resource group in the deployment summary.
+3. Confirm the lifecycle workflow has a successful run in the Azure portal.
+4. Send or wait for a health alert that your tenant is entitled to receive and confirm the Teams message.
+
+Use `azd hooks run postprovision` to resume Teams consent or bootstrap steps after an interrupted run. See [operations](docs/operations.md) for status and troubleshooting.
+
+## Documentation
+
+| Guide | Use it for |
+| --- | --- |
+| [Identity and authentication](docs/identity-and-authentication.md) | Roles, Graph consent, Teams consent, and sign-in boundaries |
+| [Configuration](docs/configuration.md) | Inputs, derived values, defaults, and supported automation |
+| [Architecture](docs/architecture.md) | Components, identities, data flow, and beta API boundary |
+| [Operations](docs/operations.md) | Verification, reruns, monitoring, troubleshooting, and cleanup |
+| [Development and publishing](docs/development.md) | Contributor checks, packaging, CI, and publishing |
+| [Agent-assisted deployment](docs/agent-assisted-deployment.md) | Safe administrator-plus-agent workflow |
+
+## Cleanup
+
+Remove the Azure resources created for the current `azd` environment:
+
+```powershell
+azd down --purge --force
 ```
 
-## What `azd up` does
+This removes the Logic Apps, Teams connection, managed identities, and other owned Azure resources. It does not provide a tenant-side Graph subscription deletion workflow; review the subscription in Microsoft Graph and remove any remaining subscription explicitly if required by your organization.
 
-`azd up` runs `azd provision`, which uses project hooks to:
+## Security
 
-1. Prompt for the alert Logic App name and Teams channel link when they are not already set.
-2. Show recommended defaults inline in the custom prompts so you can press Enter to accept them or provide your own values.
-3. Parse `TEAMS_CHANNEL_LINK` and store the team, channel, and tenant IDs in the `azd` environment before infrastructure parameters are resolved.
-4. Prompt for the Azure subscription and let you select or create the resource group through the built-in `azd` experience.
-5. Provision both Logic App Consumption workflows with system-assigned managed identities.
-6. Provision a Microsoft Teams connection resource.
-7. If the Teams connection needs consent, pause and wait for you to complete the browser flow and press Enter.
-8. After the Teams connection is authenticated, grant the alert workflow `HealthMonitoringAlert.Read.All`.
-9. Grant the lifecycle workflow `HealthMonitoringAlertConfig.ReadWrite.All`.
-
-## Authentication
-
-- The deployed solution is secret-free.
-- The alert workflow uses managed identity for Microsoft Graph alert reads.
-- The lifecycle workflow uses managed identity for Graph subscription lifecycle operations.
-- The lifecycle workflow does not post to Teams directly. It relays warning messages to the alert workflow webhook.
-- The Teams connector uses the user-authorized Logic Apps connection.
-- The signed-in operator's delegated Graph token is used only during provisioning to grant Graph app roles to the workflows' managed identities.
-
-## Inputs
-
-The user provides:
-
-- Azure subscription through the normal `azd` selection experience
-- Azure resource group through the normal `azd` selection or creation experience
-- Alert Logic App name
-- `TEAMS_CHANNEL_LINK`
-
-The project derives the team ID, channel ID, tenant ID, webhook URL, Logic App principal IDs, and resource IDs automatically.
+The workflows use managed identities and no stored client secret. Review the [security boundaries](docs/identity-and-authentication.md#security-boundaries) before granting Graph admin consent, and report vulnerabilities through the repository's security policy.

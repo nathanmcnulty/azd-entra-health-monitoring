@@ -12,7 +12,7 @@ The alert workflow exposes an HTTP callback URL for Graph notifications and ackn
 
 ## Trust boundaries
 
-Microsoft Graph health monitoring is a `/beta` API boundary. Azure managed identities perform runtime Graph operations; the operator's delegated token is used only during provisioning to grant the two application roles and obtain Teams consent metadata. No client secret is provisioned.
+Microsoft Graph health monitoring is a `/beta` API boundary. Azure managed identities perform runtime Graph operations; the operator's delegated token is used during provisioning to inspect and grant the two application roles and obtain Teams consent metadata. The Graph app-role consent/assignment authority is a separate **Global Administrator or Privileged Role Administrator** responsibility. No client secret is provisioned.
 
 ## Lifecycle
 

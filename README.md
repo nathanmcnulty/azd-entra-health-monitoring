@@ -8,7 +8,7 @@ This template helps an administrator:
 2. Keep the Graph health-alert subscription renewed automatically.
 3. Monitor connection and lifecycle status without storing an app secret.
 
-> This is a beta Graph health-monitoring integration. It uses Microsoft Graph `/beta` resources and requires explicit consent for the managed-identity permissions described below.
+> This is a beta Graph health-monitoring integration. It uses Microsoft Graph `/beta` resources and may require consent for the managed-identity permissions described in the documentation.
 
 ## Quickstart
 
@@ -20,7 +20,7 @@ Install:
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
 - PowerShell 7 or later on Windows
 
-Use an administrator who can select or create the Azure resource group and grant Microsoft Graph application permissions. The deployment needs `HealthMonitoringAlert.Read.All` for the alert workflow and `HealthMonitoringAlertConfig.ReadWrite.All` for the lifecycle workflow. Your organization may require a Privileged Role Administrator or Global Administrator to grant that consent.
+Use an Azure operator who can select or create the resource group and complete the Teams connection setup. Some environments already have the required Microsoft Graph permissions consented. If Graph consent has not been completed previously, the deployment may require a **Global Administrator or Privileged Role Administrator**. Review [identity and authentication](docs/identity-and-authentication.md) for the exact permissions and setup behavior.
 
 Have a Microsoft Teams channel ready. During setup, copy its channel link. A user or service account must complete the browser consent for the Teams connection; use the identity that should appear as the sender of alert messages.
 
@@ -40,7 +40,7 @@ Two Logic App Consumption workflows and one Teams API connection are created:
 
 - An alert workflow receives Graph health-alert change notifications, reads alert details with its managed identity, and posts them to Teams.
 - A lifecycle workflow runs daily, creates the Graph subscription when missing, renews it before expiration, and relays renewal warnings to the alert workflow.
-- System-assigned managed identities are granted only the two Graph application roles listed above.
+- System-assigned managed identities are granted only the documented Graph application roles.
 
 The deployment is secret-free: it does not create an app registration or client secret. The Teams connection is user-authorized during setup.
 

@@ -2,7 +2,11 @@
 
 ## Azure operator
 
-The operator uses the normal `azd` and Azure CLI browser or operating-system sign-in flow. The selected Azure subscription and tenant must be the intended deployment scope. The operator needs permission to select or create the resource group and permission to grant Microsoft Graph application roles, subject to tenant consent policy.
+The operator uses the normal `azd` and Azure CLI browser or operating-system sign-in flow. The selected Azure subscription and tenant must be the intended deployment scope. The operator needs permission to select or create the resource group and a Graph context that can inspect and assign the workload roles during postprovision.
+
+## Microsoft Graph consent authority
+
+The two workload roles below are Microsoft Graph application permissions. Tenant-wide consent or assignment of these Graph app roles must be completed by a **Global Administrator or Privileged Role Administrator**. This is separate from Azure resource deployment and Teams connection consent. The current postprovision hook performs the assignment with the deploying operator's delegated Graph token, so a deployment operator without the required Graph context may leave Azure resources and a Teams connection present while postprovision fails.
 
 ## Workload identities
 
@@ -13,7 +17,7 @@ Each Logic App has a system-assigned managed identity:
 | Alert workflow | `HealthMonitoringAlert.Read.All` | Read health-alert details after receiving notifications |
 | Lifecycle workflow | `HealthMonitoringAlertConfig.ReadWrite.All` | Create, inspect, reauthorize, and renew health-alert subscriptions |
 
-These roles are granted during `postprovision` using the operator's delegated Graph token. The template does not create an app registration or store a client secret.
+These roles are granted during `postprovision` using the operator's delegated Graph token after the Graph consent boundary is satisfied. The template does not create an app registration or store a client secret.
 
 ## Teams consent
 

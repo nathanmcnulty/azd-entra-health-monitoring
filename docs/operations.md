@@ -18,7 +18,7 @@ The prompts reuse values stored in the `azd` environment. If Teams consent was s
 azd hooks run postprovision
 ```
 
-The Graph role assignments and subscription lifecycle operations are designed to be idempotent. Investigate the exact Azure, Teams, and Graph error before rerunning; do not bypass consent or tenant validation.
+The Graph role assignments and subscription lifecycle operations are designed to be idempotent. A 403 while assigning a Graph application role requires a **Global Administrator or Privileged Role Administrator** to complete or authorize the Graph consent/assignment step; a Teams or Azure role cannot substitute for it. Investigate the exact Azure, Teams, and Graph error before rerunning; do not bypass consent or tenant validation.
 
 ## Cleanup
 

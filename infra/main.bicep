@@ -6,8 +6,12 @@ param targetTeamId string
 param targetChannelId string
 param targetChannelDisplayName string = ''
 
+@secure()
+@minLength(43)
+@maxLength(43)
+param graphSubscriptionClientState string
+
 var resourceToken = toLower(uniqueString(subscription().id, resourceGroup().id, environmentName))
-var graphSubscriptionClientState = guid(subscription().id, resourceGroup().id, environmentName, logicAppName, 'graph-subscription-client-state')
 var tags = {
   'entra-health-env': environmentName
 }

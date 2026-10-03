@@ -3,10 +3,10 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "NotificationUrl": {
-      "type": "String"
+      "type": "securestring"
     },
     "GraphSubscriptionClientState": {
-      "type": "String"
+      "type": "securestring"
     }
   },
   "triggers": {
@@ -22,6 +22,9 @@
   "actions": {
     "List_subscriptions": {
       "type": "Http",
+      "runtimeConfiguration": {
+        "secureData": { "properties": ["inputs", "outputs"] }
+      },
       "runAfter": {},
       "inputs": {
         "method": "GET",
@@ -32,8 +35,11 @@
         }
       }
     },
-    "Filter_matching_subscription": {
+    "Filter_callback_subscriptions": {
       "type": "Query",
+      "runtimeConfiguration": {
+        "secureData": { "properties": ["inputs", "outputs"] }
+      },
       "runAfter": {
         "List_subscriptions": [
           "Succeeded"
@@ -41,34 +47,76 @@
       },
       "inputs": {
         "from": "@body('List_subscriptions')?['value']",
-        "where": "@and(equals(item()?['changeType'], 'created'), or(equals(item()?['resource'], '/reports/healthmonitoring/alerts'), equals(item()?['resource'], 'reports/healthmonitoring/alerts')), or(equals(item()?['notificationUrl'], parameters('NotificationUrl')), equals(item()?['clientState'], parameters('GraphSubscriptionClientState'))))"
+        "where": "@and(equals(item()?['changeType'], 'created'), or(equals(item()?['resource'], '/reports/healthmonitoring/alerts'), equals(item()?['resource'], 'reports/healthmonitoring/alerts')), equals(item()?['notificationUrl'], parameters('NotificationUrl')))"
       }
     },
-    "Get_matching_subscription": {
+    "Listing_is_ambiguous": {
       "type": "Compose",
+      "runtimeConfiguration": {
+        "secureData": { "properties": ["inputs"] }
+      },
       "runAfter": {
-        "Filter_matching_subscription": [
+        "Filter_callback_subscriptions": [
           "Succeeded"
         ]
       },
-      "inputs": "@first(body('Filter_matching_subscription'))"
+      "inputs": "@or(not(empty(body('List_subscriptions')?['@odata.nextLink'])), greater(length(body('Filter_callback_subscriptions')), 1))"
+    },
+    "Assert_subscription_ownership": {
+      "type": "If",
+      "runAfter": {
+        "Listing_is_ambiguous": [
+          "Succeeded"
+        ]
+      },
+      "expression": "@equals(outputs('Listing_is_ambiguous'), true)",
+      "actions": {
+        "Stop_on_incomplete_or_mismatched_subscription": {
+          "type": "Terminate",
+          "inputs": {
+            "runStatus": "Failed",
+            "runError": {
+              "code": "GraphSubscriptionOwnershipUnclear",
+              "message": "The Graph subscription listing is incomplete or has multiple matches for this callback. Reconcile the exact subscription before renewing or creating one."
+            }
+          }
+        }
+      },
+      "else": {
+        "actions": {}
+      }
+    },
+    "Has_callback_subscription": {
+      "type": "Compose",
+      "runtimeConfiguration": {
+        "secureData": { "properties": ["inputs"] }
+      },
+      "runAfter": {
+        "Assert_subscription_ownership": [
+          "Succeeded"
+        ]
+      },
+      "inputs": "@greater(length(body('Filter_callback_subscriptions')), 0)"
     },
     "Check_existing_subscription": {
       "type": "If",
       "runAfter": {
-        "Get_matching_subscription": [
+        "Has_callback_subscription": [
           "Succeeded"
         ]
       },
       "expression": {
         "equals": [
-          "@outputs('Get_matching_subscription')",
-          "@null"
+          "@outputs('Has_callback_subscription')",
+          false
         ]
       },
       "actions": {
         "Create_subscription": {
           "type": "Http",
+          "runtimeConfiguration": {
+            "secureData": { "properties": ["inputs", "outputs"] }
+          },
           "runAfter": {},
           "inputs": {
             "method": "POST",
@@ -90,10 +138,73 @@
       },
       "else": {
         "actions": {
+          "Get_matching_subscription": {
+            "type": "Compose",
+            "runtimeConfiguration": {
+              "secureData": { "properties": ["inputs"] }
+            },
+            "runAfter": {},
+            "inputs": "@first(body('Filter_callback_subscriptions'))"
+          },
+          "Get_subscription_by_id": {
+            "type": "Http",
+            "runtimeConfiguration": {
+              "secureData": { "properties": ["inputs", "outputs"] }
+            },
+            "runAfter": {
+              "Get_matching_subscription": ["Succeeded"]
+            },
+            "inputs": {
+              "method": "GET",
+              "uri": "https://graph.microsoft.com/beta/subscriptions/@{outputs('Get_matching_subscription')?['id']}",
+              "authentication": {
+                "type": "ManagedServiceIdentity",
+                "audience": "https://graph.microsoft.com"
+              }
+            }
+          },
+          "Verify_subscription_ownership": {
+            "type": "Compose",
+            "runtimeConfiguration": {
+              "secureData": { "properties": ["inputs"] }
+            },
+            "runAfter": {
+              "Get_subscription_by_id": [
+                "Succeeded"
+              ]
+            },
+            "inputs": "@and(equals(body('Get_subscription_by_id')?['id'], outputs('Get_matching_subscription')?['id']), equals(body('Get_subscription_by_id')?['notificationUrl'], parameters('NotificationUrl')), equals(body('Get_subscription_by_id')?['changeType'], 'created'), or(equals(body('Get_subscription_by_id')?['resource'], '/reports/healthmonitoring/alerts'), equals(body('Get_subscription_by_id')?['resource'], 'reports/healthmonitoring/alerts')), equals(body('Get_subscription_by_id')?['clientState'], parameters('GraphSubscriptionClientState')))"
+          },
+          "Stop_on_subscription_mismatch": {
+            "type": "If",
+            "runAfter": {
+              "Verify_subscription_ownership": [
+                "Succeeded"
+              ]
+            },
+            "expression": "@equals(outputs('Verify_subscription_ownership'), false)",
+            "actions": {
+              "Fail_on_subscription_mismatch": {
+                "type": "Terminate",
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "GraphSubscriptionOwnershipMismatch",
+                    "message": "The exact subscription does not match this workflow's callback and clientState. Reconcile it before renewal."
+                  }
+                }
+              }
+            },
+            "else": { "actions": {} }
+          },
           "Compose_expiration": {
             "type": "Compose",
-            "runAfter": {},
-            "inputs": "@outputs('Get_matching_subscription')?['expirationDateTime']"
+            "runAfter": {
+              "Stop_on_subscription_mismatch": [
+                "Succeeded"
+              ]
+            },
+            "inputs": "@body('Get_subscription_by_id')?['expirationDateTime']"
           },
           "Check_expiring_soon": {
             "type": "If",
@@ -157,6 +268,9 @@
                       "actions": {
                         "Relay_lifecycle_warning": {
                           "type": "Http",
+                          "runtimeConfiguration": {
+                            "secureData": { "properties": ["inputs", "outputs"] }
+                          },
                           "runAfter": {},
                           "inputs": {
                             "method": "POST",

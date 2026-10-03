@@ -12,7 +12,7 @@ hooks:
   preup:
     windows:
       shell: pwsh
-      run: ./scripts/preprovision.ps1
+      run: ./scripts/prepare-inputs.ps1
       interactive: true
   preprovision:
     windows:

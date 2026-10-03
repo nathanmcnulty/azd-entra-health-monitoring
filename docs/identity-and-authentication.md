@@ -17,7 +17,7 @@ Each Logic App has a system-assigned managed identity:
 | Alert workflow | `HealthMonitoringAlert.Read.All` | Read health-alert details after receiving notifications |
 | Lifecycle workflow | `HealthMonitoringAlertConfig.ReadWrite.All` | Create, inspect, reauthorize, and renew health-alert subscriptions |
 
-These roles are granted during `postprovision` using the operator's delegated Graph token after the Graph consent boundary is satisfied. The template does not create an app registration or store a client secret.
+These roles are granted during `postprovision` using the operator's delegated Graph token after the Graph consent boundary is satisfied. The template does not create an app registration or store an app client secret. It does store a separate random Graph notification `clientState` in an environment-bound Key Vault. The selected provisioning operator receives secret get/set access through a vault access policy; the Logic App managed identities do not receive Key Vault access because the secure value is injected during deployment.
 
 ## Teams consent
 

@@ -16,4 +16,4 @@ Microsoft Graph health monitoring is a `/beta` API boundary. Azure managed ident
 
 ## Lifecycle
 
-Pre-provision parses and tenant-checks the Teams link. Bicep creates the workflows, identities, and connection. Post-provision obtains the callback URL, waits for Teams authorization, grants the Graph roles idempotently, and prints a deployment summary.
+Pre-provision parses and tenant-checks the Teams link. Bicep creates the workflows, identities, and connection, and passes the alert workflow callback URL directly to the lifecycle workflow. Post-provision waits for Teams authorization, grants the Graph roles idempotently, and prints a deployment summary without the callback URL.

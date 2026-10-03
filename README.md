@@ -1,6 +1,6 @@
 # Entra Health Monitoring
 
-Deploy a secret-free Azure workflow that forwards Microsoft Entra health alerts to a Microsoft Teams channel and renews its Microsoft Graph subscription.
+Deploy an Azure workflow that forwards Microsoft Entra health alerts to a Microsoft Teams channel and renews its Microsoft Graph subscription. A random Graph notification validation secret is held in Azure Key Vault; the template does not create an app registration or client secret.
 
 This template helps an administrator:
 
@@ -36,13 +36,13 @@ The guided setup asks for an alert Logic App name and Teams channel link, lets `
 
 ## What gets deployed
 
-Two Logic App Consumption workflows and one Teams API connection are created:
+The preprovision hook creates or reuses an environment-bound Key Vault secret. Provisioning creates two Logic App Consumption workflows and one Teams API connection:
 
 - An alert workflow receives Graph health-alert change notifications, reads alert details with its managed identity, and posts them to Teams.
 - A lifecycle workflow runs daily, creates the Graph subscription when missing, renews it before expiration, and relays renewal warnings to the alert workflow.
 - System-assigned managed identities are granted only the documented Graph application roles.
 
-The deployment is secret-free: it does not create an app registration or client secret. The Teams connection is user-authorized during setup.
+The Key Vault secret stays stable across redeployments and renewals. The current `azd` environment stores only its Key Vault reference. The Teams connection is user-authorized during setup.
 
 ```mermaid
 flowchart LR
@@ -83,8 +83,8 @@ Remove the Azure resources created for the current `azd` environment:
 azd down --purge --force
 ```
 
-This removes the Logic Apps, Teams connection, managed identities, and other owned Azure resources. It does not provide a tenant-side Graph subscription deletion workflow; review the subscription in Microsoft Graph and remove any remaining subscription explicitly if required by your organization.
+This removes the Logic Apps, Teams connection, managed identities, and environment-owned Key Vault. Key Vault soft-delete retention may require recovery or separately authorized purge before reusing the same environment name. It does not remove a tenant-side Graph subscription; review that subscription explicitly if required by your organization.
 
 ## Security
 
-The workflows use managed identities and no stored client secret. Review the [security boundaries](docs/identity-and-authentication.md#security-boundaries) before granting Graph admin consent, and report vulnerabilities through the repository's security policy.
+The workflows use managed identities and no app client secret. Their Graph notification `clientState` is a protected Key Vault secret. Review the [security boundaries](docs/identity-and-authentication.md#security-boundaries) before granting Graph admin consent, and report vulnerabilities through the repository's security policy.

@@ -12,7 +12,7 @@
       "type": "String"
     },
     "GraphSubscriptionClientState": {
-      "type": "String"
+      "type": "securestring"
     },
     "$connections": {
       "type": "Object",
@@ -23,6 +23,9 @@
     "When_a_HTTP_request_is_received": {
       "type": "Request",
       "kind": "Http",
+      "runtimeConfiguration": {
+        "secureData": { "properties": ["inputs", "outputs"] }
+      },
       "inputs": {
         "method": "POST",
         "schema": {
@@ -40,32 +43,27 @@
     }
   },
   "actions": {
+    "Has_validation_token": {
+      "type": "Compose",
+      "runtimeConfiguration": {
+        "secureData": { "properties": ["inputs"] }
+      },
+      "runAfter": {},
+      "inputs": "@and(not(equals(triggerOutputs()?['queries']?['validationToken'], null)), not(equals(triggerOutputs()?['queries']?['validationToken'], '')))"
+    },
     "Check_for_validation_token": {
       "type": "If",
-      "expression": {
-        "and": [
-          {
-            "not": {
-              "equals": [
-                "@triggerOutputs()?['queries']?['validationToken']",
-                "@null"
-              ]
-            }
-          },
-          {
-            "not": {
-              "equals": [
-                "@triggerOutputs()?['queries']?['validationToken']",
-                ""
-              ]
-            }
-          }
-        ]
+      "runAfter": {
+        "Has_validation_token": ["Succeeded"]
       },
+      "expression": "@equals(outputs('Has_validation_token'), true)",
       "actions": {
         "Return_validation_token": {
           "type": "Response",
           "kind": "Http",
+          "runtimeConfiguration": {
+            "secureData": { "properties": ["inputs"] }
+          },
           "runAfter": {},
           "inputs": {
             "statusCode": 200,
@@ -89,31 +87,24 @@
               }
             }
           },
+          "Verify_internal_message": {
+            "type": "Compose",
+            "runtimeConfiguration": {
+              "secureData": { "properties": ["inputs"] }
+            },
+            "runAfter": {
+              "Acknowledge_notification": ["Succeeded"]
+            },
+            "inputs": "@and(not(equals(triggerBody()?['internalMessage'], null)), equals(triggerBody()?['internalMessage']?['clientState'], parameters('GraphSubscriptionClientState')))"
+          },
           "Check_internal_message": {
             "type": "If",
             "runAfter": {
-              "Acknowledge_notification": [
+              "Verify_internal_message": [
                 "Succeeded"
               ]
             },
-            "expression": {
-              "and": [
-                {
-                  "not": {
-                    "equals": [
-                      "@triggerBody()?['internalMessage']",
-                      "@null"
-                    ]
-                  }
-                },
-                {
-                  "equals": [
-                    "@triggerBody()?['internalMessage']?['clientState']",
-                    "@parameters('GraphSubscriptionClientState')"
-                  ]
-                }
-              ]
-            },
+            "expression": "@equals(outputs('Verify_internal_message'), true)",
             "actions": {
               "Post_internal_message_to_teams": {
                 "type": "ApiConnection",
@@ -140,41 +131,43 @@
               "actions": {}
             }
           },
+          "Select_notifications": {
+            "type": "Select",
+            "runtimeConfiguration": {
+              "secureData": { "properties": ["inputs", "outputs"] }
+            },
+            "runAfter": {
+              "Acknowledge_notification": ["Succeeded"]
+            },
+            "inputs": {
+              "from": "@coalesce(triggerBody()?['value'], json('[]'))",
+              "select": {
+                "valid": "@and(equals(item()?['clientState'], parameters('GraphSubscriptionClientState')), equals(toLower(item()?['changeType']), 'created'))",
+                "alertId": "@coalesce(item()?['resourceData']?['id'], last(split(coalesce(item()?['resource'], ''), '/')))",
+                "subscriptionExpirationDateTime": "@item()?['subscriptionExpirationDateTime']"
+              }
+            }
+          },
           "Check_for_notifications": {
             "type": "If",
             "runAfter": {
-              "Acknowledge_notification": [
+              "Select_notifications": [
                 "Succeeded"
               ]
             },
             "actions": {
               "For_each_notification": {
                 "type": "Foreach",
-                "foreach": "@triggerBody()?['value']",
+                "foreach": "@body('Select_notifications')",
                 "actions": {
                   "Check_notification": {
                     "type": "If",
-                    "expression": {
-                      "and": [
-                        {
-                          "equals": [
-                            "@items('For_each_notification')?['clientState']",
-                            "@parameters('GraphSubscriptionClientState')"
-                          ]
-                        },
-                        {
-                          "equals": [
-                            "@toLower(items('For_each_notification')?['changeType'])",
-                            "created"
-                          ]
-                        }
-                      ]
-                    },
+                    "expression": "@equals(items('For_each_notification')?['valid'], true)",
                     "actions": {
                       "Compose_alert_id": {
                         "type": "Compose",
                         "runAfter": {},
-                        "inputs": "@coalesce(items('For_each_notification')?['resourceData']?['id'], last(split(items('For_each_notification')?['resource'], '/')))"
+                        "inputs": "@items('For_each_notification')?['alertId']"
                       },
                       "Get_alert_details": {
                         "type": "Http",
@@ -293,21 +286,13 @@
                 "runAfter": {}
               }
             },
-            "expression": {
-              "not": {
-                "equals": [
-                  "@triggerBody()?['value']",
-                  "@null"
-                ]
-              }
-            },
+            "expression": "@greater(length(body('Select_notifications')), 0)",
             "else": {
               "actions": {}
             }
           }
         }
-      },
-      "runAfter": {}
+      }
     }
   },
   "outputs": {}

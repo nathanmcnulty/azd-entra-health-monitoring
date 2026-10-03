@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "1.0",
+  "solutionId": "azd-entra-health-monitoring",
+  "status": "implemented",
+  "coverage": "partial",
+  "reviewedOn": "2026-10-03",
+  "requirements": [
+    {
+      "resource": "Selected Azure resource group",
+      "kind": "azure-rbac",
+      "permission": "Microsoft.Resources/subscriptions/resourceGroups/read and write",
+      "principal": "Selected Azure CLI provisioning operator",
+      "phase": "deployment",
+      "feature": "graph-client-state",
+      "defaultEnabled": true,
+      "scope": "Selected subscription and environment resource group",
+      "rationale": "Preprovision inspects the selected resource group and creates it if azd has not yet done so, before creating the environment-bound Key Vault.",
+      "evidenceState": "code",
+      "evidence": [
+        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "0b82870995384b217c59163cb4105219c76d993b65050c7e30724e4778a1ebea" }
+      ]
+    },
+    {
+      "resource": "Environment-bound Azure Key Vault",
+      "kind": "azure-rbac",
+      "permission": "Microsoft.KeyVault/vaults/read and write; Microsoft.KeyVault/vaults/accessPolicies/write",
+      "principal": "Selected Azure CLI provisioning operator",
+      "phase": "deployment",
+      "feature": "graph-client-state",
+      "defaultEnabled": true,
+      "scope": "Environment resource group and deterministic Key Vault name",
+      "rationale": "Preprovision creates or verifies the exact vault and grants the selected operator only secret get/set access through a vault access policy during initial bootstrap.",
+      "evidenceState": "code",
+      "evidence": [
+        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "0b82870995384b217c59163cb4105219c76d993b65050c7e30724e4778a1ebea" }
+      ]
+    }
+  ],
+  "gaps": [
+    "The schema has no Key Vault access-policy kind. The selected operator also needs secret get/set data-plane access; no workflow managed identity receives Key Vault access.",
+    "Existing Microsoft Graph app roles, delegated administrator consent, Teams connector consent, and Azure cleanup permissions are documented separately but not yet fully inventoried in this manifest."
+  ]
+}

@@ -44,7 +44,6 @@ Import-AzdEnvironment
 Write-Host "Alert Logic App: $($env:LOGIC_APP_NAME)"
 Write-Host "Lifecycle Logic App: $($env:LIFECYCLE_LOGIC_APP_NAME)"
 Write-Host "Resource Group: $($env:AZURE_RESOURCE_GROUP)"
-Write-Host "Webhook URL: $($env:GRAPH_NOTIFICATION_URL)"
 Write-Host "Teams Connection: $($env:TEAMS_CONNECTION_NAME)"
 
 $connectionUri = "https://management.azure.com/subscriptions/$($env:AZURE_SUBSCRIPTION_ID)/resourceGroups/$($env:AZURE_RESOURCE_GROUP)/providers/Microsoft.Web/connections/$($env:TEAMS_CONNECTION_NAME)?api-version=2016-06-01"

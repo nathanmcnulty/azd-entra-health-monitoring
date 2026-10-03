@@ -14,19 +14,6 @@ function Import-AzdEnvironment {
     }
 }
 
-function Set-AzdValue {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Name,
-        [Parameter(Mandatory = $true)]
-        [AllowEmptyString()]
-        [string]$Value
-    )
-
-    azd env set $Name $Value | Out-Null
-    Set-Item -Path "env:$Name" -Value $Value
-}
-
 function Get-ManagementToken {
     if ([string]::IsNullOrWhiteSpace($env:AZURE_SUBSCRIPTION_ID)) {
         throw 'AZURE_SUBSCRIPTION_ID is required to acquire an Azure Resource Manager token.'
@@ -66,21 +53,6 @@ function Invoke-AzureManagementJson {
     }
 
     return Invoke-RestMethod -Method $Method -Uri $Uri -Headers $headers
-}
-
-function Get-LogicAppTriggerCallbackUrl {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$WorkflowName,
-        [Parameter(Mandatory = $true)]
-        [string]$TriggerName
-    )
-
-    $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
-    $resourceGroupName = $env:AZURE_RESOURCE_GROUP
-    $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Logic/workflows/$WorkflowName/triggers/$TriggerName/listCallbackUrl?api-version=2016-06-01"
-    $response = Invoke-AzureManagementJson -Method Post -Uri $uri
-    return $response.value
 }
 
 function Get-DeploymentLocation {
@@ -161,8 +133,6 @@ function Wait-ForTeamsConnectionAuthorization {
 function Write-DeploymentSummary {
     param(
         [Parameter(Mandatory = $true)]
-        [string]$NotificationUrl,
-        [Parameter(Mandatory = $true)]
         [string]$ConnectionStatus
     )
 
@@ -170,7 +140,6 @@ function Write-DeploymentSummary {
     Write-Host "  Alert Logic App: $($env:LOGIC_APP_NAME)"
     Write-Host "  Lifecycle Logic App: $($env:LIFECYCLE_LOGIC_APP_NAME)"
     Write-Host "  Resource Group: $($env:AZURE_RESOURCE_GROUP)"
-    Write-Host "  Webhook URL: $NotificationUrl"
     Write-Host "  Teams Connection: $($env:TEAMS_CONNECTION_NAME)"
     Write-Host "  Teams Connection Status: $ConnectionStatus"
 }
@@ -304,9 +273,6 @@ if ([string]::IsNullOrWhiteSpace($env:LOGIC_APP_NAME)) {
     throw 'LOGIC_APP_NAME was not found in the azd environment. Run azd provision first.'
 }
 
-$notificationUrl = Get-LogicAppTriggerCallbackUrl -WorkflowName $env:LOGIC_APP_NAME -TriggerName 'When_a_HTTP_request_is_received'
-Set-AzdValue -Name 'GRAPH_NOTIFICATION_URL' -Value $notificationUrl
-
 Ensure-TeamsConnection -ConnectionName $env:TEAMS_CONNECTION_NAME
 $consentLink = Get-TeamsConsentLink -ConnectionName $env:TEAMS_CONNECTION_NAME
 
@@ -321,6 +287,6 @@ Ensure-ManagedIdentityGraphRoles -PrincipalId $env:LOGIC_APP_PRINCIPAL_ID -RoleV
 Ensure-ManagedIdentityGraphRoles -PrincipalId $env:LIFECYCLE_LOGIC_APP_PRINCIPAL_ID -RoleValues @('HealthMonitoringAlertConfig.ReadWrite.All')
 
 $connectionStatus = Get-TeamsConnectionStatus -ConnectionName $env:TEAMS_CONNECTION_NAME
-Write-DeploymentSummary -NotificationUrl $notificationUrl -ConnectionStatus $connectionStatus
+Write-DeploymentSummary -ConnectionStatus $connectionStatus
 
 Write-Host 'Logic App bootstrap is complete. Graph subscription lifecycle is handled by the lifecycle workflow managed identity.'

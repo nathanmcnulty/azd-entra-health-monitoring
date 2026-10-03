@@ -37,6 +37,11 @@ jobs:
           Get-ChildItem -Path . -Recurse -File -Filter *.json | ForEach-Object {
             Get-Content $_.FullName -Raw | ConvertFrom-Json -Depth 100 | Out-Null
           }
+      - name: Test callback output
+        run: |
+          Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force
+          $result = Invoke-Pester -Path ./tests/CallbackOutput.Tests.ps1 -PassThru
+          if ($result.Result -ne 'Passed') { throw "Pester validation failed: $($result.Result)." }
       - name: Install Bicep
         run: az bicep install
       - name: Build Bicep

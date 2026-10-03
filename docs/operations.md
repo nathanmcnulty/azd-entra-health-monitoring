@@ -2,7 +2,7 @@
 
 ## Verify
 
-After deployment, inspect the printed resource group, Logic App names, callback URL handling, and Teams connection status. In the Azure portal, confirm the lifecycle workflow has a successful run and the alert workflow is enabled. Confirm delivery with an actual health alert when one is available to the tenant.
+After deployment, inspect the printed resource group, Logic App names, and Teams connection status. In the Azure portal, confirm the lifecycle workflow has a successful run and the alert workflow is enabled. Confirm delivery with an actual health alert when one is available to the tenant.
 
 The status script prints the current Logic App names, Teams connection status, and latest lifecycle run:
 

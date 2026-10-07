@@ -287,6 +287,22 @@
                 "else": {
                   "actions": {}
                 }
+              },
+              "Fail_on_renewal_failure": {
+                "type": "Terminate",
+                "runAfter": {
+                  "Check_warning_window": [
+                    "Succeeded",
+                    "Failed"
+                  ]
+                },
+                "inputs": {
+                  "runStatus": "Failed",
+                  "runError": {
+                    "code": "GraphSubscriptionRenewalFailed",
+                    "message": "The owned Graph subscription could not be renewed. Review the failed renewal action; a warning relay does not prove renewal succeeded."
+                  }
+                }
               }
             },
             "else": {

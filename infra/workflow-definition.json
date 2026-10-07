@@ -23,6 +23,7 @@
     "When_a_HTTP_request_is_received": {
       "type": "Request",
       "kind": "Http",
+      "operationOptions": "EnableSchemaValidation",
       "runtimeConfiguration": {
         "secureData": { "properties": ["inputs", "outputs"] }
       },
@@ -34,7 +35,47 @@
             "value": {
               "type": "array",
               "items": {
-                "type": "object"
+                "type": "object",
+                "properties": {
+                  "changeType": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "clientState": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "resource": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "subscriptionExpirationDateTime": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "resourceData": {
+                    "type": [
+                      "object",
+                      "null"
+                    ],
+                    "properties": {
+                      "id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -142,7 +183,7 @@
             "inputs": {
               "from": "@coalesce(triggerBody()?['value'], json('[]'))",
               "select": {
-                "valid": "@and(equals(item()?['clientState'], parameters('GraphSubscriptionClientState')), equals(toLower(item()?['changeType']), 'created'))",
+                "valid": "@and(equals(item()?['clientState'], parameters('GraphSubscriptionClientState')), equals(toLower(coalesce(item()?['changeType'], '')), 'created'), not(empty(coalesce(item()?['resourceData']?['id'], last(split(coalesce(item()?['resource'], ''), '/'))))))",
                 "alertId": "@coalesce(item()?['resourceData']?['id'], last(split(coalesce(item()?['resource'], ''), '/')))",
                 "subscriptionExpirationDateTime": "@item()?['subscriptionExpirationDateTime']"
               }
@@ -158,7 +199,7 @@
             "actions": {
               "For_each_notification": {
                 "type": "Foreach",
-                "foreach": "@body('Select_notifications')",
+                "foreach": "@union(body('Select_notifications'), body('Select_notifications'))",
                 "actions": {
                   "Check_notification": {
                     "type": "If",
@@ -178,7 +219,7 @@
                         },
                         "inputs": {
                           "method": "GET",
-                          "uri": "https://graph.microsoft.com/beta/reports/healthMonitoring/alerts/@{outputs('Compose_alert_id')}?$select=id,alertType,scenario,category,createdDateTime,state,enrichment,documentation",
+                          "uri": "https://graph.microsoft.com/beta/reports/healthMonitoring/alerts/@{uriComponent(outputs('Compose_alert_id'))}?$select=id,alertType,scenario,category,createdDateTime,state,enrichment,documentation",
                           "headers": {
                             "Prefer": "include-unknown-enum-members"
                           },

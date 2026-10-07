@@ -157,7 +157,7 @@ Describe 'Graph notification clientState workflow' {
         $select = $receiver.actions.Check_for_validation_token.else.actions.Select_notifications
         $select.runtimeConfiguration.secureData.properties | Should -Contain 'outputs'
         @($select.inputs.select.PSObject.Properties.Name | Sort-Object) | Should -Be @('alertId', 'subscriptionExpirationDateTime', 'valid')
-        $receiver.actions.Check_for_validation_token.else.actions.Check_for_notifications.actions.For_each_notification.foreach | Should -Be "@body('Select_notifications')"
+        $receiver.actions.Check_for_validation_token.else.actions.Check_for_notifications.actions.For_each_notification.foreach | Should -Be "@union(body('Select_notifications'), body('Select_notifications'))"
         foreach ($workflow in @($receiver, $lifecycle)) {
             foreach ($action in @(Get-WorkflowActions -Actions $workflow.actions)) {
                 $properties = @($action.runtimeConfiguration.secureData.properties | Where-Object { $null -ne $_ })

@@ -5,8 +5,8 @@
 
 - **Schema version:** 1.0.0
 - **Repository:** nathanmcnulty/azd-entra-health-monitoring
-- **Source revision:** `7bdae8bad4497331bf50083d8614053348a998b3`
-- **Captured:** 2026-10-03
+- **Source revision:** `6e509bfbc8cb90d7ce8c1a321515e4a0584180e3`
+- **Captured:** 2026-10-06
 - **Items:** 6
 
 ## HEALTH-001: Reconcile this backlog with current source and active work
@@ -125,7 +125,7 @@ Review HEALTH-002 against the current repository state. Its status or authorizat
 
 - **Kind:** maintenance
 - **Priority:** P1
-- **Status:** proposed
+- **Status:** done
 - **Wave:** 1
 - **Authorization:** local-only
 - **Blocker:** _none_
@@ -133,7 +133,7 @@ Review HEALTH-002 against the current repository state. Its status or authorizat
 
 **Problem:**
 
-PR &num;9 replaced deterministic clientState and hardened exact subscription ownership, but the broader malformed-notification, duplicate-delivery, removed-subscription and transient-failure fixture gates remain incomplete.
+Before follow-through, malformed notification, duplicate-batch, removed-subscription and transient-failure fixture gates lacked behavioral coverage. The receiver and synthetic Azure fixtures now cover those bounded cases; real Graph renewal, Teams receipt and production privacy acceptance remain HEALTH-004.
 
 **Scope:**
 
@@ -171,9 +171,12 @@ PR &num;9 replaced deterministic clientState and hardened exact subscription own
 
 **Evidence:**
 
-- Current main includes merged PR &num;9&colon; an environment-bound random 256-bit Key Vault clientState, stable ordinary redeployment, explicit migration/rotation, secure workflow parameters, complete-list ambiguity checks, exact subscription GET ownership verification and fail-closed renewal behavior. Issue &num;7 is closed.
-- Current-main offline validation passed 14/14 tests across callback output, Graph clientState and lifecycle workflow suites. The implementation does not complete every original acceptance fixture&colon; malformed receiver notification shapes, removed subscriptions, duplicate delivery suppression, API transient/retry failures and renewal failure behavior still lack the requested behavioral coverage.
-- No live Graph subscription, Teams receipt or runtime-history confidentiality evidence was produced during reconciliation, so the broader item remains proposed.
+- Pre-follow-through baseline at main 6e509bf&colon; Current main includes merged PR &num;9&colon; an environment-bound random 256-bit Key Vault clientState, stable ordinary redeployment, explicit migration/rotation, secure workflow parameters, complete-list ambiguity checks, exact subscription GET ownership verification and fail-closed renewal behavior. Issue &num;7 is closed.
+- Pre-follow-through baseline at main 6e509bf&colon; Current-main offline validation passed 14/14 tests across callback output, Graph clientState and lifecycle workflow suites. The implementation does not complete every original acceptance fixture&colon; malformed receiver notification shapes, removed subscriptions, duplicate delivery suppression, API transient/retry failures and renewal failure behavior still lack the requested behavioral coverage.
+- Pre-follow-through baseline at main 6e509bf&colon; No live Graph subscription, Teams receipt or runtime-history confidentiality evidence was produced during reconciliation, so the broader item remains proposed.
+- 2026-10-06 reviewed follow-through&colon; receiver field types are enforced by Request schema validation; missing changeType, mismatched state and empty IDs cannot reach alert lookup/delivery; alert IDs are URI-escaped; identical normalized records within one batch are processed once. Separate webhook requests remain independently processed. Failed renewal explicitly terminates even when its warning relay succeeds.
+- Exact-source offline checks&colon; Pester 15/15, all PowerShell parsed, Bicep compiled with the existing BCP187 connector-kind warning, backlog schema/dependency/generated-view checks and git diff --check passed. The new optional lab harness is never run by ordinary offline CI.
+- Authorized commercial-lab synthetic Azure Logic Apps validation passed all 15 cases in fresh attempt r3&colon; seven receiver cases and eight lifecycle cases. Actual action statuses verify create/renew, fail-closed cases skipping both operations, and failed renewal with successful warning relay followed by Terminate. The final strengthened lifecycle assertions were checked against that retained receipt. Successful receipt SHA-256 c4f7f91c1a8a315013b4b6f6604fe79e4707c89efda2fa337fc7d9a4cdb924b8. Both failed earlier fixture attempts are retained; all three exact tagged test resource groups are absent. No identities, role assignments, Graph subscriptions or Teams deliveries were created. Retry timing and synthetic-data visibility differ from production; real Graph/Teams and confidentiality acceptance remain HEALTH-004.
 
 **Review and authorization note:**
 
@@ -283,6 +286,7 @@ Merged PR &num;8 stops new callback disclosure/storage but leaves any existing a
 - Current main and docs/operations.md cover exact Graph subscription ownership plus clientState migration/rotation. They do not establish whether a selected environment still contains the legacy GRAPH&lowbar;NOTIFICATION&lowbar;URL key or whether pre-PR &num;8 terminals, transcripts, CI history, artifacts or copied output retain a callback credential.
 - The operations guide now defines a value-safe, redacted assessment packet; exact workflow/trigger ownership; Primary callback access-key impact; fail-closed preparation; secure reprovisioning; and separate authorization boundaries for Graph mutation, access-key regeneration, environment/artifact cleanup and delivery.
 - No target-bound environment or historical location was assessed, and no callback URL, secret value, access key, clientState or token was read. No rotation, Graph mutation, environment deletion, cleanup or delivery ran. The item therefore remains proposed with no active claim.
+- 2026-10-06 bounded target assessment&colon; a value-safe presence check found no legacy callback key in ehm-test and found the key in ehmtest. Only presence and nonsecret environment/target metadata were retained; callback and other credential values were not displayed or copied. An explicit AzureCloud/lab subscription and tenant check found the exact ehmtest resource group absent, so no live workflow or trigger was available for ownership-bound rotation. Historical terminal, CI and artifact locations remain unassessed; no Graph inventory, rotation, environment-key removal or artifact deletion was performed. The remaining assessment/cleanup gate stays proposed.
 
 **Review and authorization note:**
 

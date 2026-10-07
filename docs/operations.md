@@ -10,6 +10,8 @@ The status script prints the current Logic App names, Teams connection status, a
 pwsh ./scripts/status.ps1
 ```
 
+The receiver validates declared notification field types before processing. Missing change types, mismatched `clientState` and empty alert IDs do not reach alert lookup or delivery. Identical normalized notifications in one batch are processed once; separate webhook requests can still deliver the same alert more than once. Acknowledging a request does not establish Teams receipt. A failed lifecycle renewal explicitly fails the workflow even if its warning relay succeeds.
+
 ## Rerun and recover
 
 The prompts reuse values stored in the `azd` environment. If Teams consent was skipped or interrupted, complete the browser flow and run:

@@ -68,10 +68,19 @@ function SanitizeActions($Actions, [string]$StubCallback, $Replies, [switch]$Rec
         if ($action.ContainsKey('else')) { SanitizeActions $action.else.actions $StubCallback $Replies -Receiver:$Receiver }
     }
 }
-function Submit($Workflow, $Payload, [string]$Query='') {
-    try { $result=Invoke-WebRequest -Uri ($Workflow.callback+$Query) -Method POST -Body ($Payload | ConvertTo-Json -Depth 20 -Compress) -ContentType 'application/json' -SkipHttpErrorCheck }
+function Submit($Workflow, $Payload, [string]$Query='', [string]$ContentType='application/json', [switch]$RawBody) {
+    $body=if($RawBody){$Payload}else{$Payload | ConvertTo-Json -Depth 20 -Compress}
+    try { $result=Invoke-WebRequest -Uri ($Workflow.callback+$Query) -Method POST -Body $body -ContentType $ContentType -SkipHttpErrorCheck }
     catch { throw 'Synthetic trigger transport failed; signed callback excluded from diagnostics.' }
-    if ($result.StatusCode -ge 400) { return @{httpStatus=[int]$result.StatusCode;runStatus='Rejected';actions=@{};runId=$null} }
+    $requestMessage=$result.BaseResponse.RequestMessage
+    $observedContentLength=$requestMessage.Content.Headers.ContentLength
+    $requestWire=@{
+        method=[string]$requestMessage.Method.Method
+        mediaType=[string]$requestMessage.Content.Headers.ContentType.MediaType
+        charset=[string]$requestMessage.Content.Headers.ContentType.CharSet
+        contentLength=if($null -eq $observedContentLength){$null}else{[long]$observedContentLength}
+    }
+    if ($result.StatusCode -ge 400) { return @{httpStatus=[int]$result.StatusCode;runStatus='Rejected';actions=@{};runId=$null;requestWire=$requestWire} }
     for ($attempt=0;$attempt -lt 60;$attempt++) {
         $runs=Arm GET "$($Workflow.id)/runs?api-version=2019-05-01&`$top=1"
         if ($runs.value.Count -gt 0) {
@@ -79,7 +88,7 @@ function Submit($Workflow, $Payload, [string]$Query='') {
             if ($latest.properties.status -in @('Succeeded','Failed','Cancelled')) {
                 $actions=Arm GET "$($Workflow.id)/runs/$($latest.name)/actions?api-version=2019-05-01"
                 $statuses=@{}; foreach ($action in $actions.value) { $statuses[$action.name]=$action.properties.status }
-                return @{httpStatus=[int]$result.StatusCode;responseBody=[string]$result.Content;runStatus=$latest.properties.status;actions=$statuses;runId=$latest.name}
+                return @{httpStatus=[int]$result.StatusCode;responseBody=[string]$result.Content;runStatus=$latest.properties.status;actions=$statuses;runId=$latest.name;requestWire=$requestWire}
             }
         }
         Start-Sleep -Seconds 2
@@ -104,7 +113,7 @@ try {
         @{name='malformed-type';payload=@{value=@(@{clientState=$state;changeType=123})};expected='Rejected';http=400},
         @{name='empty-id';payload=@{value=@(@{clientState=$state;changeType='created';resourceData=@{id=''}})};expected='Succeeded';http=202},
         @{name='duplicate-batch';payload=@{value=@($valid,$valid)};expected='Succeeded';http=202},
-        @{name='validation';payload=@{};query='&validationToken=SyntheticValidation';expected='Succeeded';http=200}
+        @{name='validation';payload=[byte[]]::new(0);query='&validationToken=SyntheticValidation';contentType='text/plain;charset=utf-8';rawBody=$true;expected='Succeeded';http=200;wire=@{method='POST';mediaType='text/plain';charset='utf-8';contentLength=0;queryParameter='validationToken'}}
     )
     foreach ($case in $receiverCases) {
         $definition=Get-Content -LiteralPath (Join-Path $Repository 'infra/workflow-definition.json') -Raw | ConvertFrom-Json -AsHashtable -Depth 100
@@ -114,12 +123,16 @@ try {
         $definition=$text.Replace("body('Get_alert_details')","outputs('Get_alert_details')") | ConvertFrom-Json -AsHashtable -Depth 100
         $fixture=New-FixtureWorkflow "receiver-$($case.name)" $definition @{GraphSubscriptionClientState=@{value=$state};TargetTeamId=@{value='synthetic-team'};TargetChannelId=@{value='synthetic-channel'};TargetChannelDisplayName=@{value='synthetic-channel'}}
         $query=if($case.ContainsKey('query')){$case.query}else{''}
-        $result=Submit $fixture $case.payload $query
+        $contentType=if($case.ContainsKey('contentType')){$case.contentType}else{'application/json'}
+        $rawBody=$case.ContainsKey('rawBody') -and $case.rawBody -eq $true
+        $result=Submit $fixture $case.payload $query $contentType -RawBody:$rawBody
         if ($case.name -eq 'duplicate-batch' -and $result.runId) {
             $iterations=Arm GET "$($fixture.id)/runs/$($result.runId)/actions/For_each_notification/scopeRepetitions?api-version=2019-05-01"
             $result.iterations=$iterations.value.Count
         }
-        $receipt.cases+=@{name=$case.name;kind='receiver';result=$result}
+        $receiptCase=@{name=$case.name;kind='receiver';result=$result}
+        if($case.ContainsKey('wire')){$receiptCase.wire=$case.wire}
+        $receipt.cases+=$receiptCase
         Write-Output ("Receiver {0}: {1}, HTTP {2}" -f $case.name, $result.runStatus, $result.httpStatus)
         if ($result.runStatus -ne $case.expected -or $result.httpStatus -ne $case.http) { throw "Receiver fixture '$($case.name)' failed." }
         if ($case.name -eq 'duplicate-batch' -and $result.iterations -ne 1) { throw 'Duplicate normalization did not reduce the batch to one iteration.' }
@@ -129,7 +142,10 @@ try {
         if ($case.name -in @('valid','duplicate-batch')) {
             if ($result.actions.Get_alert_details -ne 'Succeeded' -or $result.actions.Post_message_in_a_chat_or_channel -ne 'Succeeded') { throw 'Valid notification did not reach synthetic delivery.' }
         }
-        if ($case.name -eq 'validation' -and $result.responseBody -ne 'SyntheticValidation') { throw 'Validation token response did not match.' }
+        if ($case.name -eq 'validation') {
+            if ($result.responseBody -ne 'SyntheticValidation') { throw 'Validation token response did not match.' }
+            if ($result.requestWire.method -ne 'POST' -or $result.requestWire.mediaType -ine 'text/plain' -or $result.requestWire.charset -ine 'utf-8' -or $result.requestWire.contentLength -ne 0) { throw 'Observed validation request did not match the Graph wire contract.' }
+        }
     }
     $owned=@{id='synthetic-subscription';notificationUrl=$callbackParameter;changeType='created';resource='/reports/healthmonitoring/alerts';clientState=$state;expirationDateTime=[DateTime]::UtcNow.AddDays(3).ToString('o')}
     foreach ($name in @('create','renew','mismatch','removed-detail','incomplete-list','duplicate-list','list-transient','renewal-failure')) {

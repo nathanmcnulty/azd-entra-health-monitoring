@@ -4,3 +4,4 @@ dist/
 src/**/bin/
 src/**/obj/
 infra/main.json
+reports/

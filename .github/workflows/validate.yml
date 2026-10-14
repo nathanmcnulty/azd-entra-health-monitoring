@@ -17,8 +17,6 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      AZURE_CONFIG_DIR: ${{ runner.temp }}/azure-config
     defaults:
       run:
         shell: pwsh
@@ -31,8 +29,12 @@ jobs:
           }
           Write-Output "PowerShell $($PSVersionTable.PSVersion); 64-bit=$([Environment]::Is64BitProcess)"
       - name: Install Bicep
+        env:
+          AZURE_CONFIG_DIR: ${{ runner.temp }}/azure-config
         run: az bicep install
       - name: Run registered offline validation
+        env:
+          AZURE_CONFIG_DIR: ${{ runner.temp }}/azure-config
         run: |
           Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force
           ./scripts/Test-Repository.ps1 -BicepPath (Join-Path $env:AZURE_CONFIG_DIR 'bin/bicep')

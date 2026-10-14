@@ -17,7 +17,7 @@
       "rationale": "Preprovision inspects the selected resource group and creates it if azd has not yet done so, before creating the environment-bound Key Vault.",
       "evidenceState": "code",
       "evidence": [
-        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "69131f98aa6c1258f92738adeb28f0961d8675668b73c9825c142e2c5531d778" }
+        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "0b82870995384b217c59163cb4105219c76d993b65050c7e30724e4778a1ebea" }
       ]
     },
     {
@@ -32,7 +32,7 @@
       "rationale": "Preprovision creates or verifies the exact vault and grants the selected operator only secret get/set access through a vault access policy during initial bootstrap.",
       "evidenceState": "code",
       "evidence": [
-        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "69131f98aa6c1258f92738adeb28f0961d8675668b73c9825c142e2c5531d778" }
+        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "0b82870995384b217c59163cb4105219c76d993b65050c7e30724e4778a1ebea" }
       ]
     },
     {

@@ -6,7 +6,7 @@ This template helps an administrator:
 
 1. Receive Microsoft Entra health alert notifications in Teams.
 2. Keep the Graph health-alert subscription renewed automatically.
-3. Monitor connection and lifecycle status without storing an app secret.
+3. Monitor connection, subscription, and workflow status without storing an app secret.
 
 > This is a beta Graph health-monitoring integration. It uses Microsoft Graph `/beta` resources and may require consent for the managed-identity permissions described in the documentation.
 
@@ -62,6 +62,11 @@ After `azd up`:
 3. Confirm the lifecycle workflow has a successful run in the Azure portal.
 4. Send or wait for a health alert that your tenant is entitled to receive and confirm the Teams message.
 
+Run `./scripts/Test-Deployment.ps1` for a bounded, read-only report. It keeps
+connection readiness, Graph subscription freshness, workflow execution, and
+recipient receipt as separate evidence. A ready connection or successful run
+never proves that a recipient saw a Teams message.
+
 Use `azd hooks run postprovision` to resume Teams consent or bootstrap steps after an interrupted run. See [operations](docs/operations.md) for status and troubleshooting.
 
 ## Documentation
@@ -72,6 +77,7 @@ Use `azd hooks run postprovision` to resume Teams consent or bootstrap steps aft
 | [Configuration](docs/configuration.md) | Inputs, derived values, defaults, and supported automation |
 | [Architecture](docs/architecture.md) | Components, identities, data flow, and beta API boundary |
 | [Operations](docs/operations.md) | Verification, reruns, monitoring, troubleshooting, and cleanup |
+| [Deployment validation](docs/deployment-validation.md) | Read-only checks, evidence boundaries, and shared-contract decisions |
 | [Development and publishing](docs/development.md) | Contributor checks, packaging, CI, and publishing |
 | [Agent-assisted deployment](docs/agent-assisted-deployment.md) | Safe administrator-plus-agent workflow |
 

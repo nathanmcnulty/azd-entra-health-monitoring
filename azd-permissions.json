@@ -3,7 +3,7 @@
   "solutionId": "azd-entra-health-monitoring",
   "status": "implemented",
   "coverage": "partial",
-  "reviewedOn": "2026-10-03",
+  "reviewedOn": "2026-10-13",
   "requirements": [
     {
       "resource": "Selected Azure resource group",
@@ -17,7 +17,7 @@
       "rationale": "Preprovision inspects the selected resource group and creates it if azd has not yet done so, before creating the environment-bound Key Vault.",
       "evidenceState": "code",
       "evidence": [
-        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "0b82870995384b217c59163cb4105219c76d993b65050c7e30724e4778a1ebea" }
+        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "69131f98aa6c1258f92738adeb28f0961d8675668b73c9825c142e2c5531d778" }
       ]
     },
     {
@@ -32,12 +32,43 @@
       "rationale": "Preprovision creates or verifies the exact vault and grants the selected operator only secret get/set access through a vault access policy during initial bootstrap.",
       "evidenceState": "code",
       "evidence": [
-        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "0b82870995384b217c59163cb4105219c76d993b65050c7e30724e4778a1ebea" }
+        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "69131f98aa6c1258f92738adeb28f0961d8675668b73c9825c142e2c5531d778" }
+      ]
+    },
+    {
+      "resource": "Selected Teams managed connection",
+      "kind": "azure-rbac",
+      "permission": "Microsoft.Web/connections/read",
+      "principal": "Selected Azure CLI validation operator",
+      "phase": "discovery",
+      "feature": "operator-validation",
+      "defaultEnabled": false,
+      "scope": "Exact Teams connection in the selected environment resource group",
+      "rationale": "The optional read-only deployment validator reads the existing connection status. It does not authorize, modify, or send through the connection and does not assign this permission.",
+      "evidenceState": "code",
+      "evidence": [
+          { "path": "scripts/Health.Validation.psm1", "sha256": "be84acd736211043330577cf5a6f101ec3afd3c832cb5ce2d182fb258adb6874" }
+      ]
+    },
+    {
+      "resource": "Selected alert and lifecycle Logic Apps",
+      "kind": "azure-rbac",
+      "permission": "Microsoft.Logic/workflows/read; Microsoft.Logic/workflows/runs/read; Microsoft.Logic/workflows/runs/actions/read",
+      "principal": "Selected Azure CLI validation operator",
+      "phase": "discovery",
+      "feature": "operator-validation",
+      "defaultEnabled": false,
+      "scope": "Exact alert and lifecycle workflows in the selected environment resource group",
+      "rationale": "The optional read-only deployment validator uses typed exact-resource endpoint construction to read latest run metadata and the safe Compose_expiration action. That action is treated only as requested-expiration evidence and never as authoritative Graph subscription freshness. The validator avoids subscription-create outputs and does not start, change, or delete a workflow or Graph subscription.",
+      "evidenceState": "code",
+      "evidence": [
+          { "path": "scripts/Health.Validation.psm1", "sha256": "be84acd736211043330577cf5a6f101ec3afd3c832cb5ce2d182fb258adb6874" }
       ]
     }
   ],
   "gaps": [
     "The schema has no Key Vault access-policy kind. The selected operator also needs secret get/set data-plane access; no workflow managed identity receives Key Vault access.",
-    "Existing Microsoft Graph app roles, delegated administrator consent, Teams connector consent, and Azure cleanup permissions are documented separately but not yet fully inventoried in this manifest."
+    "Existing Microsoft Graph app roles, delegated administrator consent, Teams connector consent, and Azure cleanup permissions are documented separately but not yet fully inventoried in this manifest.",
+    "The optional validator adds no Graph permission and performs no permission grant. It rejects malformed environment selectors before token acquisition and allows only the exact configured connection, workflow latest-run, and Compose_expiration ARM GET endpoints. Subscription freshness always remains explicitly unknown because the safe lifecycle action proves only a requested expiration, not Graph's accepted/current state; recipient receipt still requires external confirmation."
   ]
 }

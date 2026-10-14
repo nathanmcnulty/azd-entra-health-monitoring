@@ -4,11 +4,22 @@
 
 After deployment, inspect the printed resource group, Logic App names, and Teams connection status. In the Azure portal, confirm the lifecycle workflow has a successful run and the alert workflow is enabled. Confirm delivery with an actual health alert when one is available to the tenant.
 
-The status script prints the current Logic App names, Teams connection status, and latest lifecycle run:
+Run the structured read-only validation before the manual checks:
 
 ```powershell
-pwsh ./scripts/status.ps1
+./scripts/Test-Deployment.ps1
 ```
+
+Use `./scripts/Test-Deployment.ps1 -Plan` to inspect the four checks without
+reading the azd environment or making authentication, HTTP, Azure, Graph,
+connector, workflow, or delivery calls. The report keeps connection readiness,
+subscription freshness, workflow runs, and recipient receipt separate. Missing
+safe evidence stays `unknown`; a successful Logic App run never becomes proof
+that the Teams recipient saw the message. See [deployment validation and result
+contracts](deployment-validation.md).
+
+The legacy `scripts/status.ps1` remains available for a short console view of
+the current connection and latest lifecycle run.
 
 The receiver validates declared notification field types before processing. Missing change types, mismatched `clientState` and empty alert IDs do not reach alert lookup or delivery. Identical normalized notifications in one batch are processed once; separate webhook requests can still deliver the same alert more than once. Acknowledging a request does not establish Teams receipt. A failed lifecycle renewal explicitly fails the workflow even if its warning relay succeeds.
 

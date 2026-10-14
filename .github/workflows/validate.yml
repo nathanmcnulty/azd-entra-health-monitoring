@@ -31,7 +31,11 @@ jobs:
       - name: Install Bicep
         env:
           AZURE_CONFIG_DIR: ${{ runner.temp }}/azure-config
-        run: az bicep install
+        run: |
+          az config set bicep.use_binary_from_path=false
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to configure the Bicep installation.' }
+          az bicep install --version v0.46.1
+          if ($LASTEXITCODE -ne 0) { throw 'Unable to install Bicep.' }
       - name: Run registered offline validation
         env:
           AZURE_CONFIG_DIR: ${{ runner.temp }}/azure-config

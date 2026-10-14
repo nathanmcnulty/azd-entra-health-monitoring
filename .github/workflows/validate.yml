@@ -17,6 +17,8 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      AZURE_CONFIG_DIR: ${{ runner.temp }}/azure-config
     defaults:
       run:
         shell: pwsh
@@ -33,4 +35,4 @@ jobs:
       - name: Run registered offline validation
         run: |
           Install-Module Pester -RequiredVersion 5.7.1 -Scope CurrentUser -Force
-          ./scripts/Test-Repository.ps1 -BicepPath (Join-Path $HOME '.azure/bin/bicep')
+          ./scripts/Test-Repository.ps1 -BicepPath (Join-Path $env:AZURE_CONFIG_DIR 'bin/bicep')

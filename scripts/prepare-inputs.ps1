@@ -1,3 +1,4 @@
+#Requires -Version 7.6
 $ErrorActionPreference = 'Stop'
 
 Add-Type -AssemblyName System.Web.HttpUtility

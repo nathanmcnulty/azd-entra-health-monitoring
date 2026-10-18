@@ -14,12 +14,6 @@ BeforeAll {
     }
 }
 
-AfterAll {
-    # Pester 5.7.1 can retain a module's strict-mode setting after InModuleScope.
-    # Restore the ordinary repository test boundary for suites that follow.
-    Set-StrictMode -Off
-}
-
 Describe 'HEALTH-005 immutable component adoption' {
     It 'matches the locked deployment-validation version and file hashes' {
         $root = Split-Path -Parent $PSScriptRoot
@@ -571,10 +565,10 @@ Describe 'HEALTH-005 source authority boundaries' {
         }
     }
 
-    It 'guards the registered workflow with 64-bit PowerShell 7.6 before validation' {
+    It 'guards the registered workflow with 64-bit PowerShell 7.6.6 before validation' {
         $root = Split-Path -Parent $PSScriptRoot
         $workflow = Get-Content -LiteralPath (Join-Path $root '.github/workflows/validate.yml') -Raw
-        $guard = $workflow.IndexOf("`$PSVersionTable.PSVersion -lt [version]'7.6'", [StringComparison]::Ordinal)
+        $guard = $workflow.IndexOf("`$PSVersionTable.PSVersion -ne [version]'7.6.6'", [StringComparison]::Ordinal)
         $validation = $workflow.IndexOf('./scripts/Test-Repository.ps1', [StringComparison]::Ordinal)
 
         $guard | Should -BeGreaterThan -1

@@ -18,7 +18,7 @@ Install:
 
 - [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) 1.23.0 or later
 - [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli)
-- PowerShell 7 or later on Windows
+- PowerShell 7.6 or later on Windows
 
 Use an Azure operator who can select or create the resource group and complete the Teams connection setup. Some environments already have the required Microsoft Graph permissions consented. If Graph consent has not been completed previously, the deployment may require a **Global Administrator or Privileged Role Administrator**. Review [identity and authentication](docs/identity-and-authentication.md) for the exact permissions and setup behavior.
 

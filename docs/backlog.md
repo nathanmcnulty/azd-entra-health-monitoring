@@ -7,7 +7,7 @@
 - **Repository:** nathanmcnulty/azd-entra-health-monitoring
 - **Source revision:** `6e509bfbc8cb90d7ce8c1a321515e4a0584180e3`
 - **Captured:** 2026-10-06
-- **Items:** 6
+- **Items:** 7
 
 ## HEALTH-001: Reconcile this backlog with current source and active work
 
@@ -64,6 +64,63 @@ Plans and implementation evidence are spread across files; the captured source c
 **Review and authorization note:**
 
 Review HEALTH-001 against the current repository state. Its status or authorization class is not eligible for an actionable generated handoff. Do not claim or execute it without explicit selection, satisfied dependencies, and every required authorization. Never interpret this generated view as approval.
+
+## HEALTH-007: Complete the supported authoring and test baseline
+
+- **Kind:** maintenance
+- **Priority:** P1
+- **Status:** done
+- **Wave:** 0
+- **Authorization:** local-only
+- **Blocker:** _none_
+- **Claim:** _none_
+
+**Problem:**
+
+Owned helpers declared PowerShell 7.0, current guidance and validation pinned Pester 5.7.1, and Windows newline conversion broke immutable component byte checks.
+
+**Scope:**
+
+- Owned PowerShell runtime declarations and current prerequisites
+- Registered validator, CI runtime and Pester selection
+- Pester strict-mode workaround and cross-platform immutable byte policy
+
+**Acceptance:**
+
+- All owned tooling requires PowerShell 7.6+; CI selects verified PowerShell 7.6.6 and exact Pester 6.2.0.
+- Every registered test passes without omissions; remove the per-suite workaround only with full-suite and strict caller-isolation evidence.
+- Preserve immutable vendor source/version/locks and classify upstream metadata explicitly; preserve permissions and deployed Logic App workflow behavior.
+
+**Validation:**
+
+- ./scripts/Test-Repository.ps1 -BicepPath &lt;explicit-local-bicep-executable&gt;
+- Run the registered validator from a strict-mode caller and verify that the caller setting survives.
+- Validate canonical permission/backlog schemas, component hashes and generated backlog.
+- Compare actual original/current Pester invocation and outcome-gate blocks using real Pester 6.2.0 in isolated PowerShell 7.6.6 processes.
+- Check a fresh core.autocrlf=true index export against locked vendor and permission-evidence hashes.
+
+**Dependencies:**
+
+- _none_
+
+**Components:**
+
+- deployment-validation
+
+**Sources:**
+
+- https&colon;//github.com/nathanmcnulty/azd-entra-health-monitoring/issues/14
+
+**Evidence:**
+
+- Rechecked current main 0cf185b8c2ad9cbeff36de8e8a39773208dc4ef2 and no overlapping active draft. All nine owned scripts/modules plus the synthetic validation entrypoint require PowerShell 7.6. CI selects the reviewed SHA-256-verified 7.6.6 archive and exact Pester 6.2.0. Current prerequisites agree; historical receipts remain intact.
+- The full registered validator on PowerShell 7.6.6/.NET 10.0.12/Pester 6.2.0 passes all 68/68 tests with zero failures, skips, inconclusive or unexecuted cases after removing the Pester-5-specific AfterAll reset. A strict-mode caller remains strict after the actual validator returns. Existing assertions and invocation counts are preserved; the runtime-order assertion now checks the stronger exact 7.6.6 selection. Parser, JSON, component hashes and Bicep 0.42.1 compile pass; Bicep reports the existing BCP187 resource-property warning.
+- The immutable deployment-validation 1.1.1 bundle and its lock remain byte-identical to the pinned Reference source. Its upstream PowerShellVersion 7.2 manifest is frozen metadata, not owned support guidance. Scoped LF checkout rules preserve the exact vendor bytes and Health.Validation permission-evidence bytes on Windows; permission metadata changes only source hashes for runtime declarations. No cloud/authentication, Graph/Teams subscription, delivery, clientState rotation or tenant mutation ran; HEALTH-004 live acceptance and HEALTH-006 historical exposure work remain open.
+- The full registered validation completed in 17.63 seconds. Twelve isolated PowerShell 7.6.6 processes run the actual original/current Pester invocation and outcome-gate blocks under Pester 6.2.0&colon; the original accepts inconclusive, skipped and empty suites, while the corrected gate accepts only the passing fixture. No older Pester runtime was exercised. A fresh core.autocrlf=true index export matches all three locked vendor hashes and both permission-source hashes without relaxing validation or changing component bytes.
+
+**Review and authorization note:**
+
+Review HEALTH-007 against the current repository state. Its status or authorization class is not eligible for an actionable generated handoff. Do not claim or execute it without explicit selection, satisfied dependencies, and every required authorization. Never interpret this generated view as approval.
 
 ## HEALTH-002: Remove signed callback credentials from provisioning/status output and new azd environment values
 
@@ -348,7 +405,7 @@ Contract reuse can expose readiness without replacing Graph webhook or Teams con
 - The structured report keeps Teams connection readiness, subscription freshness, latest alert/lifecycle workflow runs and external recipient confirmation in four separate checks. Subscription freshness remains unknown because the safe lifecycle action proves only a requested expiration, which is retained as qualified supporting evidence; ready connections or successful runs never establish recipient receipt.
 - The read adapter validates each environment selector as one bounded name segment, constructs only the exact configured connection/latest-run/Compose&lowbar;expiration ARM GET endpoints with fixed queries, and rejects normalization drift before token acquisition. ARM GETs have finite connection and operation timeouts; the Azure CLI account/token subprocesses are not covered by those REST deadlines. Provider statuses are finite; run IDs must be raw bounded strings before selector binding and are omitted from reports; actual PowerShell REST DateTime values, DateTimeOffset values and bounded explicit-offset strings normalize to canonical UTC. Malformed identifiers start no downstream action read, and malformed or oversized primitive evidence becomes bounded unknown output rather than pass.
 - notification-contracts 1.0.0 was evaluated and not adopted&colon; its required per-event identifiers, route, attempt and provider result do not represent connection readiness, subscription freshness or recipient receipt. Graph beta workflows and managed-connector lifecycle remain solution-owned; no runtime-host or deployment behavior changed.
-- Permission metadata records only the optional validator&#39;s existing-resource ARM read requirements and states that it grants nothing and adds no Graph permission. The registered workflow now fails before validation unless it is running in 64-bit PowerShell 7.6 or newer.
+- Permission metadata records only the optional validator&&num;39;s existing-resource ARM read requirements and states that it grants nothing and adds no Graph permission. The registered workflow now fails before validation unless it is running in 64-bit PowerShell 7.6 or newer.
 - Independent source review completed all three original HEALTH-005 criteria. Earlier current-main statements above describe pre-implementation baseline b5e3a57db7f20c49d01f4dcf52a0bed6801bdf94. Actual PowerShell 7.6 REST JSON timestamp shapes, raw selector types, exact endpoint constraints, path traversal and oversized provider fields were tested through real adapter functions with fake I/O. Graph subscription freshness and recipient receipt stay unknown; requested lifecycle expiration is supporting evidence only. No grant, lifecycle, connector or notification transport authority was introduced.
 - Final affected Pester 5.7.1 suite passed 53/53 with no failures/skips on PowerShell 7.6.6. Parser, permission schema, canonical backlog/render, immutable component hashes and tracked/new-file whitespace passed. Unchanged areas retain the prior 36-test full-suite and Bicep 0.46.1 compilation evidence with existing BCP187 warning; those are not a full corrected-source replay. Fresh hosted full validation and compilation remain required before merge. This is local source acceptance only, not live connector authorization, actual Graph state, workflow execution, delivery, recipient confirmation or lifecycle acceptance. ARM GET timeouts are finite; Azure CLI cached-account/token subprocesses remain outside those deadlines.
 

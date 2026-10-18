@@ -22,9 +22,10 @@ Describe 'HEALTH-005 immutable component adoption' {
         $manifest = Test-ModuleManifest (Join-Path $root 'scripts/vendor/Azd.DeploymentValidation/Azd.DeploymentValidation.psd1')
 
         $component.Count | Should -Be 1
-        $component[0].version | Should -Be '1.1.1'
+        $component[0].version | Should -Be '2.0.0'
         $component[0].version | Should -Be $manifest.Version.ToString()
-        $component[0].sourceRevision | Should -Be '0c96cc89c554ffc3b3ca82ceda12da6591e816c1'
+        $manifest.PowerShellVersion | Should -Be ([version]'7.6')
+        $component[0].sourceRevision | Should -Be '2b2e784ba11822272c0e4b8389976f95afafa9b9'
         foreach ($file in @($component[0].files)) {
             (Get-FileHash -LiteralPath (Join-Path $root $file.target) -Algorithm SHA256).Hash.ToLowerInvariant() |
                 Should -Be $file.sha256

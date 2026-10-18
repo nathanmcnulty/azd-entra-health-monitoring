@@ -7,7 +7,7 @@
 - **Repository:** nathanmcnulty/azd-entra-health-monitoring
 - **Source revision:** `6e509bfbc8cb90d7ce8c1a321515e4a0584180e3`
 - **Captured:** 2026-10-06
-- **Items:** 7
+- **Items:** 8
 
 ## HEALTH-001: Reconcile this backlog with current source and active work
 
@@ -121,6 +121,57 @@ Owned helpers declared PowerShell 7.0, current guidance and validation pinned Pe
 **Review and authorization note:**
 
 Review HEALTH-007 against the current repository state. Its status or authorization class is not eligible for an actionable generated handoff. Do not claim or execute it without explicit selection, satisfied dependencies, and every required authorization. Never interpret this generated view as approval.
+
+## HEALTH-008: Adopt the canonical PowerShell 7.6 validation component
+
+- **Kind:** maintenance
+- **Priority:** P1
+- **Status:** done
+- **Wave:** 0
+- **Authorization:** local-only
+- **Blocker:** _none_
+- **Claim:** _none_
+
+**Problem:**
+
+The repository requires PowerShell 7.6 but still vendors the earlier validation manifest with a lower supported runtime.
+
+**Scope:**
+
+- Immutable deployment-validation component and lock
+- Component integrity assertions and current validation guide
+
+**Acceptance:**
+
+- Adopt deployment-validation 2.0.0 from reviewed immutable Reference revision 2b2e784ba11822272c0e4b8389976f95afafa9b9 using canonical synchronization.
+- Verify unchanged validation implementation and report schema, exact managed hashes, and PowerShell 7.6 manifest minimum.
+- Pass all registered offline checks without changing permission semantics, deployment behavior or live acceptance gates.
+
+**Validation:**
+
+- ./scripts/Test-Repository.ps1 -BicepPath &lt;explicit-local-bicep-executable&gt;
+- Validate component drift, canonical backlog schema and generated Markdown.
+
+**Dependencies:**
+
+- HEALTH-007
+
+**Components:**
+
+- deployment-validation
+
+**Sources:**
+
+- https&colon;//github.com/nathanmcnulty/azd-reference/pull/99
+- docs/deployment-validation.md
+
+**Evidence:**
+
+- Canonical synchronization changes only the manifest module version and PowerShell minimum plus its locked revision/hash. The module implementation and report schema remain byte-identical; no permission, cloud resource, Graph subscription or delivery operation changed.
+
+**Review and authorization note:**
+
+Review HEALTH-008 against the current repository state. Its status or authorization class is not eligible for an actionable generated handoff. Do not claim or execute it without explicit selection, satisfied dependencies, and every required authorization. Never interpret this generated view as approval.
 
 ## HEALTH-002: Remove signed callback credentials from provisioning/status output and new azd environment values
 

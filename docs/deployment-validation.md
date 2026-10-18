@@ -1,7 +1,7 @@
 # Deployment validation and result contracts
 
 `scripts/Test-Deployment.ps1` is a read-only operator check. It uses the pinned
-`deployment-validation@1.1.1` component and writes a schema-valid report to the
+`deployment-validation@2.0.0` component and writes a schema-valid report to the
 ignored `reports/deployment-validation.json` path.
 
 ```powershell

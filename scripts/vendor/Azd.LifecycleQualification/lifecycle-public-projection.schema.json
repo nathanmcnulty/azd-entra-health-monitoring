@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "azd lifecycle public synthetic projection",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "projectionVersion",
+    "projectionType",
+    "profileId",
+    "profileVersion",
+    "createdAt",
+    "admissionFreshness",
+    "currentAdmissionAuthorized",
+    "sourceRepository",
+    "reviewedSourceCommit",
+    "testedSourceCommit",
+    "orchestrationCommit",
+    "profileSha256",
+    "artifactSha256",
+    "sourceSha256",
+    "envelopeSha256",
+    "evidenceSetSha256",
+    "syntheticOutcome",
+    "stages",
+    "recoveryEvidenceObserved",
+    "nativeLifecycleQualified",
+    "executionAllowed",
+    "publicationAuthorized"
+  ],
+  "properties": {
+    "projectionVersion": {
+      "const": "0.1"
+    },
+    "projectionType": {
+      "const": "azdLifecyclePublicSyntheticProjection"
+    },
+    "profileId": {
+      "const": "health-logic-fixture"
+    },
+    "profileVersion": {
+      "const": "1.0.0"
+    },
+    "createdAt": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{7}Z$",
+      "format": "date-time"
+    },
+    "sourceRepository": {
+      "const": "nathanmcnulty/azd-entra-health-monitoring"
+    },
+    "reviewedSourceCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "testedSourceCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "orchestrationCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "profileSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "artifactSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sourceSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "envelopeSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "evidenceSetSha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "syntheticOutcome": {
+      "enum": [
+        "passed",
+        "failed"
+      ]
+    },
+    "stages": {
+      "type": "array",
+      "minItems": 7,
+      "maxItems": 7,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "stageId",
+          "status",
+          "passed"
+        ],
+        "properties": {
+          "stageId": {
+            "enum": [
+              "target-context",
+              "ownership",
+              "deployment",
+              "payload-readback",
+              "intended-function",
+              "teardown-operation",
+              "terminal-state"
+            ]
+          },
+          "status": {
+            "enum": [
+              "pass",
+              "warning",
+              "fail",
+              "skipped",
+              "unknown",
+              "cancelled"
+            ]
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "operationOutcome": { "enum": ["succeeded", "failed", "unknown", "notAttempted"] },
+          "absenceObserved": { "type": "boolean" },
+          "processExited": { "type": "boolean" },
+          "processExitCode": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 },
+          "retryCount": { "type": "integer", "minimum": 0, "maximum": 10 },
+          "deleteAttemptCount": { "type": "integer", "minimum": 0, "maximum": 1 },
+          "responseReceived": { "type": "boolean" },
+          "responseStatus": { "type": ["integer", "null"], "minimum": 100, "maximum": 599 }
+        },
+        "if": { "properties": { "stageId": { "const": "teardown-operation" } }, "required": ["stageId"] },
+        "then": {
+          "required": ["operationOutcome", "absenceObserved", "processExited", "processExitCode", "retryCount", "deleteAttemptCount", "responseReceived", "responseStatus"]
+        },
+        "else": {
+          "not": { "anyOf": [
+            { "required": ["operationOutcome"] }, { "required": ["absenceObserved"] }, { "required": ["processExited"] },
+            { "required": ["processExitCode"] }, { "required": ["retryCount"] }, { "required": ["deleteAttemptCount"] },
+            { "required": ["responseReceived"] }, { "required": ["responseStatus"] }
+          ] }
+          }
+        }
+      },
+    "recoveryEvidenceObserved": {
+      "type": "boolean"
+    },
+    "nativeLifecycleQualified": {
+      "const": false
+    },
+    "executionAllowed": {
+      "const": false
+    },
+    "publicationAuthorized": {
+      "const": false
+    },
+    "admissionFreshness": {
+      "const": "historical-at-attempt"
+    },
+    "currentAdmissionAuthorized": {
+      "const": false
+    }
+  }
+}

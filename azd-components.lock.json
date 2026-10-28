@@ -23,6 +23,59 @@
           "sha256": "eeabd298edf86ef88f9143dfef3fbec995f20f7ef0d3c380ab832b7514e83c34"
         }
       ]
+    },
+    {
+      "id": "lifecycle-qualification",
+      "version": "0.1.1",
+      "sourceRepository": "https://github.com/nathanmcnulty/azd-reference",
+      "sourceRevision": "822022038c6016f3f325210971e09987fdd0894b",
+      "files": [
+        {
+          "source": "schemas/deployment-validation.schema.json",
+          "target": "scripts/vendor/Azd.LifecycleQualification/deployment-validation.schema.json",
+          "sha256": "eeabd298edf86ef88f9143dfef3fbec995f20f7ef0d3c380ab832b7514e83c34"
+        },
+        {
+          "source": "components/powershell/lifecycle-qualification/Azd.LifecycleQualification.psd1",
+          "target": "scripts/vendor/Azd.LifecycleQualification/Azd.LifecycleQualification.psd1",
+          "sha256": "e49938bd33f6ff301d76d29fa4d5d317bce4ae00d37650145fdaed8b44813f1b"
+        },
+        {
+          "source": "components/powershell/lifecycle-qualification/Azd.LifecycleQualification.psm1",
+          "target": "scripts/vendor/Azd.LifecycleQualification/Azd.LifecycleQualification.psm1",
+          "sha256": "15f9c8d6ad0f65d13bebd702622e3fb4d378e07912b77f8e839a8cea4287f947"
+        },
+        {
+          "source": "schemas/lifecycle-qualification.schema.json",
+          "target": "scripts/vendor/Azd.LifecycleQualification/lifecycle-qualification.schema.json",
+          "sha256": "a7c6185e62d48c129f76dc8dc09c0c6d0117ff77594c62c0f125fdbe061e75d0"
+        },
+        {
+          "source": "schemas/lifecycle-plan.schema.json",
+          "target": "scripts/vendor/Azd.LifecycleQualification/lifecycle-plan.schema.json",
+          "sha256": "c825195bbb0185b89b4e8f519090a816b8f24778c2e00ba1eb923af1a66275e8"
+        },
+        {
+          "source": "schemas/lifecycle-public-projection.schema.json",
+          "target": "scripts/vendor/Azd.LifecycleQualification/lifecycle-public-projection.schema.json",
+          "sha256": "5cf356a097f2aa4e59e1ff4bb50949740a0a4707e0437f6ab60c54eacc12ea35"
+        },
+        {
+          "source": "schemas/lifecycle-stage-evidence.schema.json",
+          "target": "scripts/vendor/Azd.LifecycleQualification/lifecycle-stage-evidence.schema.json",
+          "sha256": "7da613312cdd7588fdd38fbf10e41b1a4ebfdf9eeb06175efaa407bd1e3fa217"
+        },
+        {
+          "source": "schemas/lifecycle-data-profile.schema.json",
+          "target": "scripts/vendor/Azd.LifecycleQualification/lifecycle-data-profile.schema.json",
+          "sha256": "32bd1c40317659c4c5857b67332641c2be4a79043f3f555d7839b243e4e0d0dc"
+        },
+        {
+          "source": "components/powershell/lifecycle-qualification/profiles/health-logic-fixture.v1.json",
+          "target": "scripts/vendor/Azd.LifecycleQualification/profiles/health-logic-fixture.v1.json",
+          "sha256": "053eed3134e799a708d5af00f80b2b5e977cb18ae1ce87ac93b9da74a3ff750f"
+        }
+      ]
     }
   ]
 }

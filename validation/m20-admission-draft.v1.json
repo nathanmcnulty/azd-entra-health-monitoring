@@ -1,0 +1,19 @@
+{
+  "schemaVersion":"0.1.0",
+  "packetType":"offline-preparation-not-live-approval",
+  "status":"blocked-pending-independent-review-and-exact-live-decisions",
+  "executionAuthorized":false,
+  "azureReadAuthorized":false,
+  "azureWriteAuthorized":false,
+  "proposedPlacement":{"subscriptionAlias":"sub-mvp","region":"westus2","exactTargetBound":false},
+  "sourceIdentities":"Use immutable owning-repository commits and trees from the coordinator checkpoint; never infer from this file or main.",
+  "requiredArtifactManifest":"validation/m20-generated/manifest.json",
+  "proposedManagementRequests":{"admission":300,"reservedRecovery":200,"aggregate":500},
+  "proposedTimeSeconds":{"admission":5400,"recoveryDeadlineFromAttemptStart":7200},
+  "proposedWorkload":{"outer":3,"nested":2,"retries":0,"inclusiveCeiling":20,"actionCeiling":40,"payloadBytes":10485760,"logBytes":104857600},
+  "rawSecretRetention":false,
+  "requiredLiveGates":["approved-exact-target-source-artifact-and-operations","enforceable-ownership-continuity-or-exact-human-disposition","observable-secure-callback-oracle-protocol","existing-operator-permissions-and-inbound-controls","fresh-disjoint-cost-credit-expiry-and-cleanup-liability","reachable-independent-recovery-operator"],
+  "persistentAccessChangesProposed":false,
+  "fixtureEnablementAuthorized":false,
+  "ciOrProductionActivationAuthorized":false
+}

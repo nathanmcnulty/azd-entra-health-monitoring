@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "0.1",
+  "profileType": "azdLifecycleDataProfile",
+  "id": "health-logic-fixture",
+  "version": "1.0.0",
+  "mode": "synthetic-data-only",
+  "selectedCaseIds": [
+    "receiver-duplicate-batch",
+    "receiver-mismatched-state",
+    "lifecycle-create"
+  ],
+  "caseAccounting": [
+    {
+      "caseId": "receiver-duplicate-batch",
+      "outerTriggerInvocations": 1,
+      "nestedStubTriggerInvocations": 0,
+      "configuredRetryAttempts": 0,
+      "billableActionActivations": 14
+    },
+    {
+      "caseId": "receiver-mismatched-state",
+      "outerTriggerInvocations": 1,
+      "nestedStubTriggerInvocations": 0,
+      "configuredRetryAttempts": 0,
+      "billableActionActivations": 9
+    },
+    {
+      "caseId": "lifecycle-create",
+      "outerTriggerInvocations": 1,
+      "nestedStubTriggerInvocations": 2,
+      "configuredRetryAttempts": 0,
+      "billableActionActivations": 9
+    }
+  ],
+  "maximumInclusiveTriggerInvocations": 20,
+  "countedSignals": [
+    "outerTriggerInvocations",
+    "nestedStubTriggerInvocations",
+    "configuredRetryAttempts"
+  ],
+  "dataOnly": true,
+  "executableHooks": false,
+  "providerCalls": false,
+  "proposalOnly": true,
+  "runtimeEnforced": false,
+  "maximumCombinedRequestResponseBytes": 10485760,
+  "maximumAggregateLogBytes": 104857600,
+  "maximumAggregateBillableActions": 40
+}

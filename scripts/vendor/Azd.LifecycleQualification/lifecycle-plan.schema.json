@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "azd lifecycle qualification disabled plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["planVersion", "planType", "profile", "requiredStages", "syntheticOutcome", "nativeLifecycleQualified", "executionAllowed"],
+  "properties": {
+    "planVersion": { "const": "0.1" },
+    "planType": { "const": "azdLifecyclePlan" },
+    "profile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "profileSha256"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$" },
+        "profileSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "requiredStages": {
+      "const": ["target-context", "ownership", "deployment", "payload-readback", "intended-function", "teardown-operation", "terminal-state"]
+    },
+    "syntheticOutcome": { "const": "planned" },
+    "nativeLifecycleQualified": { "const": false },
+    "executionAllowed": { "const": false }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "0.1.0",
+  "mode": "plan-only-no-executor",
+  "scope": "one approved future group and four exact workflow aliases; no arbitrary URLs",
+  "liveEnabled": false,
+  "operations": [
+    {"id":"target-read","method":"GET","resource":"approved-subscription","budget":"admission-or-reserved-recovery"},
+    {"id":"group-create","method":"PUT","resource":"approved-new-group","budget":"admission","liveGate":"ownership-continuity-protocol-unresolved"},
+    {"id":"inventory","method":"GET","resource":"approved-group/resources,providers/Microsoft.Authorization/locks,providers/Microsoft.Authorization/roleAssignments","budget":"admission-or-reserved-recovery","completePaginationRequired":true},
+    {"id":"deploy","method":"PUT","resource":"approved-four-workflows","budget":"admission"},
+    {"id":"payload-read","method":"GET","resource":"approved-four-workflows","budget":"admission"},
+    {"id":"callback-read","method":"POST","resource":"approved-four-workflows/triggers/manual/listCallbackUrl","budget":"admission","retainRawBody":false},
+    {"id":"callback-bind","method":"PUT","resource":"approved-lifecycle-workflow-secure-parameter","budget":"admission","retainRawBody":false},
+    {"id":"enable","method":"POST","resource":"approved-four-workflows/enable","budget":"admission","temporaryFixtureOnly":true},
+    {"id":"invoke","method":"POST","resource":"ephemeral-approved-callback-in-memory","budget":"admission","retainRawBody":false},
+    {"id":"run-read","method":"GET","resource":"approved-workflows/runs/known-run/actions-and-results","budget":"admission-or-reserved-recovery"},
+    {"id":"disable","method":"POST","resource":"approved-four-workflows/disable","budget":"recovery"},
+    {"id":"cancel","method":"POST","resource":"approved-workflows/runs/known-run/cancel","budget":"recovery"},
+    {"id":"delete","method":"DELETE","resource":"approved-owned-group","budget":"recovery","liveGate":"ownership-continuity-protocol-unresolved"},
+    {"id":"absence-read","method":"GET","resource":"approved-owned-group-and-four-workflows","budget":"recovery"}
+  ],
+  "excluded": ["role-write","identity-create","federation","key-generation","Graph","Teams","adopted-shared-resources","locks-remove","CI-activation","production-activation"]
+}

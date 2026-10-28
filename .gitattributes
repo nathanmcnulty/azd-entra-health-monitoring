@@ -1,3 +1,24 @@
 /scripts/Initialize-GraphClientState.ps1 text eol=lf
 /scripts/Health.Validation.psm1 text eol=lf
 /scripts/vendor/Azd.DeploymentValidation/* text eol=lf
+/infra/workflow-definition.json text eol=lf
+/infra/lifecycle-workflow-definition.json text eol=lf
+/scripts/Export-LifecycleFixture.ps1 text eol=lf
+/scripts/Health.LifecycleFixture.psm1 text eol=lf
+/tests/LifecycleFixture.Tests.ps1 text eol=lf
+/validation/profiles/health-logic-fixture.v1.json text eol=lf
+/docs/lifecycle-fixture-profile.md text eol=lf
+/scripts/Get-LifecycleQualificationPlan.ps1 text eol=lf
+/tests/LifecycleContractIntegration.Tests.ps1 text eol=lf
+/docs/lifecycle-m1-boundary.md text eol=lf
+/scripts/vendor/Azd.LifecycleQualification/** text eol=lf
+/azd-components.lock.json text eol=lf
+# M2.0 frozen artifacts and source digests are canonical Git LF bytes.
+validation/m20-generated/** text eol=lf
+validation/m20-*.json text eol=lf
+scripts/Get-M20Preparation.ps1 text eol=lf
+scripts/Health.M20Preparation.psm1 text eol=lf
+scripts/Test-M20Composition.ps1 text eol=lf
+tests/M20Preparation.Tests.ps1 text eol=lf
+infra/m20-fixture.bicep text eol=lf
+docs/m20-offline-preparation.md text eol=lf

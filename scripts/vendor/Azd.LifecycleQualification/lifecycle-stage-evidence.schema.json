@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "azd lifecycle stage evidence bytes",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "evidenceType", "stageId", "status", "attemptId", "binding"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "evidenceType": { "const": "azdLifecycleStageEvidence" },
+    "stageId": { "enum": ["target-context", "ownership", "deployment", "payload-readback", "intended-function", "teardown-operation", "terminal-state"] },
+    "status": { "enum": ["pass", "warning", "fail", "skipped", "unknown", "cancelled"] },
+    "attemptId": { "type": "string", "format": "uuid" },
+    "binding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["attemptId", "targetSha256", "sourceSha256", "profileSha256", "configurationSha256"],
+      "properties": {
+        "attemptId": { "type": "string", "format": "uuid" },
+        "targetSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "sourceSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "profileSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "configurationSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "profileCaseResults": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["caseId", "runStatus", "outerTriggerInvocations", "nestedStubTriggerInvocations", "configuredRetryAttempts", "billableActionActivations", "inputBytes", "nestedStubPayloadBytes", "logBytes"],
+        "properties": {
+          "caseId": { "enum": ["receiver-duplicate-batch", "receiver-mismatched-state", "lifecycle-create"] },
+          "runStatus": { "enum": ["pass", "warning", "fail", "skipped", "unknown", "cancelled"] },
+          "outerTriggerInvocations": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "nestedStubTriggerInvocations": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "configuredRetryAttempts": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "billableActionActivations": { "type": "integer", "minimum": 0, "maximum": 40 },
+          "inputBytes": { "type": "integer", "minimum": 0, "maximum": 10485760 },
+          "nestedStubPayloadBytes": { "type": "integer", "minimum": 0, "maximum": 10485760 },
+          "logBytes": { "type": "integer", "minimum": 0, "maximum": 104857600 }
+        }
+      }
+    },
+    "operationFacts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["operationOutcome", "dispatchCount", "retryCount", "processExited", "processExitCode", "transportAttemptCount", "responseReceived", "responseStatus"],
+      "properties": {
+        "operationOutcome": { "enum": ["succeeded", "failed", "unknown", "notAttempted"] },
+        "dispatchCount": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "retryCount": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "processExited": { "type": "boolean" },
+        "processExitCode": { "type": ["integer", "null"] },
+        "transportAttemptCount": { "type": "integer", "minimum": 0, "maximum": 1 },
+        "responseReceived": { "type": "boolean" },
+        "responseStatus": { "type": ["integer", "null"], "minimum": 100, "maximum": 599 }
+      }
+    },
+    "terminalFacts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "observationCompleted", "observedAt"],
+      "properties": {
+        "state": { "enum": ["absent", "present", "unknown"] },
+        "observationCompleted": { "type": "boolean" },
+        "observedAt": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{7}Z$" }
+      }
+    }
+  },
+  "allOf": [
+    { "if": { "properties": { "stageId": { "const": "intended-function" } }, "required": ["stageId"] }, "then": { "required": ["profileCaseResults"] }, "else": { "not": { "required": ["profileCaseResults"] } } },
+    { "if": { "properties": { "stageId": { "const": "teardown-operation" } }, "required": ["stageId"] }, "then": { "required": ["operationFacts"], "not": { "required": ["terminalFacts"] } }, "else": { "not": { "required": ["operationFacts"] } } },
+    { "if": { "properties": { "stageId": { "const": "terminal-state" } }, "required": ["stageId"] }, "then": { "required": ["terminalFacts"] }, "else": { "not": { "required": ["terminalFacts"] } } }
+  ]
+}

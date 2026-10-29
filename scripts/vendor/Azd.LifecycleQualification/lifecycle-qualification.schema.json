@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "azd synthetic lifecycle qualification envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "envelopeType", "evaluationMode", "attemptId", "createdAt", "admission", "profile", "bindings", "attemptHistory", "stages"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "envelopeType": { "const": "azdLifecycleQualification" },
+    "evaluationMode": { "const": "synthetic" },
+    "attemptId": { "$ref": "#/$defs/id" },
+    "createdAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{7}Z$", "format": "date-time" },
+    "admission": {
+      "type": "object", "additionalProperties": false,
+      "required": ["expiresAt", "reuseKey", "dataOnly"],
+      "properties": {
+        "expiresAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{7}Z$", "format": "date-time" },
+        "reuseKey": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$" },
+        "dataOnly": { "const": true }
+      }
+    },
+    "profile": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "profileSha256", "executableHooks"],
+      "properties": {
+        "id": { "const": "health-logic-fixture" },
+        "version": { "const": "1.0.0" },
+        "profileSha256": { "$ref": "#/$defs/sha256" },
+        "executableHooks": { "const": false }
+      }
+    },
+    "bindings": { "$ref": "#/$defs/bindings" },
+    "attemptHistory": {
+      "type": "array", "maxItems": 10,
+      "items": { "$ref": "#/$defs/history" }
+    },
+    "stages": {
+      "type": "array", "minItems": 7, "maxItems": 7,
+      "items": { "$ref": "#/$defs/stage" },
+      "allOf": [
+        { "contains": { "properties": { "stageId": { "const": "target-context" } }, "required": ["stageId"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "stageId": { "const": "ownership" } }, "required": ["stageId"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "stageId": { "const": "deployment" } }, "required": ["stageId"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "stageId": { "const": "payload-readback" } }, "required": ["stageId"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "stageId": { "const": "intended-function" } }, "required": ["stageId"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "stageId": { "const": "teardown-operation" } }, "required": ["stageId"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "properties": { "stageId": { "const": "terminal-state" } }, "required": ["stageId"] }, "minContains": 1, "maxContains": 1 }
+      ]
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "format": "uuid" },
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "bindings": {
+      "type": "object", "additionalProperties": false,
+      "required": ["reviewedSourceCommit", "testedSourceCommit", "orchestrationCommit", "targetSha256", "sourceSha256", "orchestrationSha256", "lockSha256", "artifactSha256", "configurationSha256"],
+      "properties": {
+        "reviewedSourceCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "testedSourceCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "orchestrationCommit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "targetSha256": { "$ref": "#/$defs/sha256" },
+        "sourceSha256": { "$ref": "#/$defs/sha256" },
+        "orchestrationSha256": { "$ref": "#/$defs/sha256" },
+        "lockSha256": { "$ref": "#/$defs/sha256" },
+        "artifactSha256": { "$ref": "#/$defs/sha256" },
+        "configurationSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "history": {
+      "type": "object", "additionalProperties": false,
+      "required": ["attemptId", "sourceSha256", "outcome", "reuseKey", "createdAt"],
+      "properties": {
+        "attemptId": { "$ref": "#/$defs/id" },
+        "sourceSha256": { "$ref": "#/$defs/sha256" },
+        "outcome": { "enum": ["passed", "failed", "unknown", "cancelled"] },
+        "reuseKey": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$" },
+        "createdAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{7}Z$", "format": "date-time" }
+      }
+    },
+    "evidenceBinding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["attemptId", "targetSha256", "sourceSha256", "profileSha256", "configurationSha256"],
+      "properties": {
+        "attemptId": { "$ref": "#/$defs/id" },
+        "targetSha256": { "$ref": "#/$defs/sha256" },
+        "sourceSha256": { "$ref": "#/$defs/sha256" },
+        "profileSha256": { "$ref": "#/$defs/sha256" },
+        "configurationSha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["path", "sha256", "binding"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[A-Za-z0-9._/-]+$" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "binding": { "$ref": "#/$defs/evidenceBinding" }
+      }
+    },
+    "stage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["stageId", "status", "evidence"],
+      "properties": {
+        "stageId": { "enum": ["target-context", "ownership", "deployment", "payload-readback", "intended-function", "teardown-operation", "terminal-state"] },
+        "status": { "enum": ["pass", "warning", "fail", "skipped", "unknown", "cancelled"] },
+        "evidence": { "$ref": "#/$defs/evidence" },
+        "operationOutcome": { "enum": ["succeeded", "failed", "unknown", "notAttempted"] },
+        "absenceObserved": { "type": "boolean" },
+        "processExitCode": { "type": "integer", "minimum": -2147483648, "maximum": 2147483647 },
+        "processExited": { "type": "boolean" },
+        "recoveryEvidence": { "type": "boolean" },
+        "retryCount": { "type": "integer", "minimum": 0, "maximum": 10 },
+        "deleteAttemptCount": { "type": "integer", "minimum": 0, "maximum": 1 }
+      },
+      "if": { "properties": { "stageId": { "const": "teardown-operation" } }, "required": ["stageId"] },
+      "then": { "required": ["operationOutcome", "absenceObserved", "processExitCode", "processExited", "recoveryEvidence", "retryCount", "deleteAttemptCount"] },
+      "else": { "not": { "anyOf": [ { "required": ["operationOutcome"] }, { "required": ["absenceObserved"] }, { "required": ["processExitCode"] }, { "required": ["processExited"] }, { "required": ["recoveryEvidence"] }, { "required": ["retryCount"] }, { "required": ["deleteAttemptCount"] } ] } }
+    }
+  }
+}

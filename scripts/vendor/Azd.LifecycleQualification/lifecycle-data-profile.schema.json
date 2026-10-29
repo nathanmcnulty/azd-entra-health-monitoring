@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "M1 Health logic-only data profile",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "profileType", "id", "version", "mode", "selectedCaseIds", "caseAccounting", "maximumInclusiveTriggerInvocations", "maximumCombinedRequestResponseBytes", "maximumAggregateLogBytes", "maximumAggregateBillableActions", "countedSignals", "dataOnly", "executableHooks", "providerCalls", "proposalOnly", "runtimeEnforced"],
+  "properties": {
+    "schemaVersion": { "const": "0.1" },
+    "profileType": { "const": "azdLifecycleDataProfile" },
+    "id": { "const": "health-logic-fixture" },
+    "version": { "const": "1.0.0" },
+    "mode": { "const": "synthetic-data-only" },
+    "selectedCaseIds": { "const": ["receiver-duplicate-batch", "receiver-mismatched-state", "lifecycle-create"] },
+    "caseAccounting": {
+      "type": "array", "minItems": 3, "maxItems": 3,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["caseId", "outerTriggerInvocations", "nestedStubTriggerInvocations", "configuredRetryAttempts", "billableActionActivations"],
+        "properties": {
+          "caseId": { "enum": ["receiver-duplicate-batch", "receiver-mismatched-state", "lifecycle-create"] },
+          "outerTriggerInvocations": { "type": "integer", "minimum": 1, "maximum": 20 },
+          "nestedStubTriggerInvocations": { "type": "integer", "minimum": 0, "maximum": 20 },
+          "configuredRetryAttempts": { "const": 0 },
+          "billableActionActivations": { "type": "integer", "minimum": 1, "maximum": 14 }
+        }
+      }
+    },
+    "maximumInclusiveTriggerInvocations": { "const": 20 },
+    "maximumCombinedRequestResponseBytes": { "const": 10485760 },
+    "maximumAggregateLogBytes": { "const": 104857600 },
+    "maximumAggregateBillableActions": { "const": 40 },
+    "countedSignals": { "const": ["outerTriggerInvocations", "nestedStubTriggerInvocations", "configuredRetryAttempts"] },
+    "dataOnly": { "const": true },
+    "executableHooks": { "const": false },
+    "providerCalls": { "const": false },
+    "proposalOnly": { "const": true },
+    "runtimeEnforced": { "const": false }
+  }
+}

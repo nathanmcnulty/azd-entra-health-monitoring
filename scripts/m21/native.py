@@ -5,6 +5,7 @@ Responses/capabilities are transient; only the closed nonsecret projection and
 fixed operation receipts may be saved. No expected-value fallback is permitted.
 """
 from datetime import datetime
+import copy
 import re
 import time
 from urllib.parse import urlsplit
@@ -17,6 +18,44 @@ TERMINAL={'Succeeded','Failed','Cancelled','TimedOut','Aborted'}
 def rid(value):
     if type(value) is not str:raise Refused('resource-id-required')
     return value.casefold()
+
+
+def parameter_types(definition,expected):
+    """Canonicalize only documented workflow parameter declaration enums.
+
+    Payloads, JSON schemas, action types and parameter values stay byte-sensitive.
+    Unknown spellings are left intact so structural comparison refuses them.
+    """
+    result=copy.deepcopy(definition)
+    if type(result) is dict and type(result.get('parameters')) is dict:
+        types=('String','SecureString','Int','Float','Bool','Array','Object','SecureObject')
+        spellings={v:v.lower() for v in types}
+        spellings.update({v.lower():v.lower() for v in types})
+        for name,declaration in result['parameters'].items():
+            if type(declaration) is dict and type(declaration.get('type')) is str:
+                target=expected.get('parameters',{}).get(name,{})
+                target=target.get('type') if type(target) is dict else None
+                if declaration['type'] in spellings and type(target) is str and target in spellings and spellings[declaration['type']]==spellings[target]:
+                    declaration['type']=target
+    return result
+
+
+def lock_scope(row,subscription):
+    """Validate a subscription lock row before classifying its parent scope."""
+    if type(row) is not dict or type(row.get('name')) is not str or not row['name']:
+        raise Refused('lock-schema')
+    lid=rid(row.get('id'));sub='/subscriptions/'+subscription.casefold()
+    match=re.fullmatch(r'(.+)/providers/microsoft.authorization/locks/([^/]+)',lid)
+    if (match is None or match[2]!=row['name'].casefold()
+            or rid(row.get('type'))!='microsoft.authorization/locks'):
+        raise Refused('lock-schema')
+    scope=match[1]
+    if scope!=sub and not re.fullmatch(re.escape(sub)+r'/resourcegroups/[^/]+(?:/providers/[^/]+(?:/[^/]+/[^/]+)+)*',scope):
+        raise Refused('unclassifiable-lock-scope')
+    p=row.get('properties')
+    if type(p) is not dict or p.get('level') not in ('CanNotDelete','ReadOnly') or type(p.get('notes','')) is not str:
+        raise Refused('lock-schema')
+    return scope
 
 
 def qualified_absence(value,group,alias=None):
@@ -96,6 +135,7 @@ class NativeController(Controller):
 
     def collection(self,url,alias=None,run=None,phase='normal'):
         root=urlsplit(url);seen=set();result=[]
+        locks=root.path.casefold()==('/subscriptions/'+self.plan['subscription']+'/providers/microsoft.authorization/locks').casefold()
         for _ in range(5):
             if url in seen:raise Refused('pagination-cycle')
             seen.add(url);page=self.observe(url,alias,run,phase)
@@ -103,10 +143,13 @@ class NativeController(Controller):
             result.extend(page['value'])
             if len(result)>100:raise Refused('collection-bound')
             for key in ('id','name'):
+                if locks and key=='name':continue # Lock names are local to their full parent scope.
                 values=[v[key] for v in result if type(v) is dict and key in v]
                 if key=='id':values=[rid(v) for v in values]
                 if len(values)!=len(set(values)):raise Refused('duplicate-collection-identity')
             if any(type(v) is not dict for v in result):raise Refused('collection-record-schema')
+            if locks:
+                for row in result:lock_scope(row,self.plan['subscription'])
             nxt=page.get('nextLink')
             if nxt is None or (type(nxt) is str and nxt==''):return result
             if type(nxt) is not str:raise Refused('pagination-type')
@@ -247,7 +290,7 @@ class NativeController(Controller):
         if (rid(value.get('id'))!=rid(self.workflow_url(alias).removeprefix('https://management.azure.com')) or value.get('name')!='m21-'+alias
                 or value.get('location','').lower()!='westus2' or value.get('identity') not in (None,{'type':'None'})
                 or p.get('state')!=state or p.get('provisioningState')!='Succeeded'
-                or p.get('definition')!=expected['definition'] or p.get('accessControl',{}).get('triggers')!=expected['accessControl']['triggers']):raise Refused('workflow-readback-mismatch')
+                or parameter_types(p.get('definition'),expected['definition'])!=expected['definition'] or p.get('accessControl',{}).get('triggers')!=expected['accessControl']['triggers']):raise Refused('workflow-readback-mismatch')
         actual=p.get('parameters',{})
         for name,record in expected['parameters'].items():
             # Secure parameters may be provider-redacted: their exact write was
@@ -257,7 +300,7 @@ class NativeController(Controller):
         # Normalize ONLY the explicitly redacted synthetic secure slots and
         # approved enabled/disabled transition; all other inputs came from GET.
         normalized={'location':value['location'].lower(),'properties':{'state':'Disabled',
-            'definition':p['definition'],'parameters':{k:(v if k in ('GraphSubscriptionClientState','FixtureStubCallback') else actual[k]) for k,v in expected['parameters'].items()},
+            'definition':parameter_types(p['definition'],expected['definition']),'parameters':{k:(v if k in ('GraphSubscriptionClientState','FixtureStubCallback') else actual[k]) for k,v in expected['parameters'].items()},
             'accessControl':{'triggers':p['accessControl']['triggers']}}}
         self._observed_configs[alias]=normalized
         self.append('workflow-observed',{'alias':alias,'endpoint':p['accessEndpoint'],
@@ -308,9 +351,7 @@ class NativeController(Controller):
             relevant=[]
             scope=self.group_url.removeprefix('https://management.azure.com')
             for lock in locks:
-                lid=lock.get('id')
-                if type(lid) is not str or '/providers/microsoft.authorization/locks/' not in lid.casefold():raise Refused('lock-schema')
-                parent=lid.casefold().rsplit('/providers/microsoft.authorization/locks/',1)[0];lower=scope.casefold()
+                parent=lock_scope(lock,self.plan['subscription']);lower=scope.casefold()
                 if parent==lower.rsplit('/resourcegroups/',1)[0] or parent==lower or parent.startswith(lower+'/'):relevant.append(lock)
             if relevant:raise Refused('relevant-lock-preserve')
             roles=self.collection(self.group_url+'/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01',phase='recovery')

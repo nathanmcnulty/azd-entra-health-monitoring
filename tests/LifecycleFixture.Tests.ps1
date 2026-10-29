@@ -5,6 +5,18 @@ BeforeAll {
 }
 
 Describe 'Health M1 local fixture profile and source gates' {
+    It 'refuses a checkout with an unrelated history even when pinned files match' {
+        $isolated = Join-Path $TestDrive 'unrelated-history'
+        New-Item -ItemType Directory -Path (Join-Path $isolated 'infra') -Force | Out-Null
+        Copy-Item (Join-Path $repoRoot 'infra/workflow-definition.json') (Join-Path $isolated 'infra')
+        Copy-Item (Join-Path $repoRoot 'infra/lifecycle-workflow-definition.json') (Join-Path $isolated 'infra')
+        & git -C $isolated init --quiet
+        & git -C $isolated add infra
+        & git -C $isolated -c user.name=Fixture -c user.email=fixture@example.invalid commit --quiet -m unrelated
+        if ($LASTEXITCODE -ne 0) { throw 'Unable to prepare isolated history fixture.' }
+        { Get-HealthFixturePlan -RepositoryRoot $isolated -ProfilePath $profilePath } | Should -Throw '*not an ancestor*'
+    }
+
     It 'plans exactly three source-bound cases with inclusive trigger accounting' {
         $plan = Get-HealthFixturePlan -RepositoryRoot $repoRoot -ProfilePath $profilePath
         $plan.Cases.Count | Should -Be 3

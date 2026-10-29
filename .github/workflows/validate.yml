@@ -22,6 +22,9 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The fixture adapter checks the pinned source ancestor and its blobs.
+          fetch-depth: 0
       - name: Select PowerShell 7.6.6
         shell: bash
         run: |
@@ -56,3 +59,8 @@ jobs:
         run: |
           Install-Module Pester -RequiredVersion 6.2.0 -Scope CurrentUser -Force
           ./scripts/Test-Repository.ps1 -BicepPath (Join-Path $env:AZURE_CONFIG_DIR 'bin/bicep')
+      - name: Run all M21 offline regressions
+        run: |
+          python3 --version
+          python3 -B -m unittest discover -s tests -p 'test_m21*.py'
+          if ($LASTEXITCODE -ne 0) { throw 'M21 offline regressions failed.' }

@@ -350,11 +350,14 @@ class NativeTests(unittest.TestCase):
             c.once_recovery('disable','receiver-duplicate');c.close()
             c=NativeController(g.plan,Path(d)/'j',transport(),Clock(),recovery=True)
             lockpath='/subscriptions/'+sid+'/providers/Microsoft.Authorization/locks?api-version=2016-09-01'
-            for parent in ('/subscriptions/'+sid,scope):
-                p.routes[lockpath]=(200,{'value':[{'id':(parent+'/providers/Microsoft.Authorization/locks/guard').upper()}]})
-                with self.assertRaises(Refused):c.recover()
+            for parent in ('/subscriptions/'+sid,scope,scope+'/providers/Microsoft.Logic/workflows/m21-receiver-duplicate'):
+                p.routes[lockpath]=(200,{'value':[{'id':(parent+'/providers/Microsoft.Authorization/locks/guard').upper(),
+                    'name':'guard','type':'Microsoft.Authorization/locks','properties':{'level':'ReadOnly'}}]})
+                with self.assertRaisesRegex(Refused,'relevant-lock-preserve'):c.recover()
                 self.assertEqual(sum(m=='DELETE' for m,h,pth,hs in p.sent),0)
-            p.routes[lockpath]=(200,{'value':[]})
+            p.routes[lockpath]=(200,{'value':[{'id':parent+'/providers/Microsoft.Authorization/locks/guard',
+                'name':'guard','type':'Microsoft.Authorization/locks','properties':{'level':'ReadOnly'}}
+                for parent in (scope+'-unrelated','/subscriptions/'+sid+'/resourceGroups/other')]})
             def delete(method,path,body):
                 if method=='DELETE':
                     absent={'error':{'code':'ResourceGroupNotFound','message':"Resource group '"+g.plan['group']+"' could not be found."}}

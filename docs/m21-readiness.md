@@ -1,5 +1,23 @@
 # Bounded offline readiness candidate
 
+CI fetches full Git history so the fixture adapter can enforce its pinned source
+ancestor from the prerequisite branch. Missing or unrelated history still refuses;
+the source commit and source file hashes are unchanged. CI also runs all M21
+offline regressions after registered repository validation.
+
+Workflow readback accepts the documented title/lowercase enum spellings only at
+`definition.parameters.<name>.type`, matching each declaration to its pinned type.
+The comparison copy retains the pinned spelling for configuration hashes. Action
+types, JSON schemas, default values, payloads and runtime parameter values receive
+no normalization. Unknown spellings and every other definition change still refuse.
+
+Subscription lock collections validate full IDs, parent scopes, names, resource
+types and levels. Names may repeat at distinct scopes; full IDs remain unique
+across all pages, including case variants. Subscription, group and descendant
+locks still block cleanup. Unclassifiable scopes refuse; other resource, role and
+run collections retain their identity rules. These offline corrections confer no
+native execution or deletion authority.
+
 This derivative is separate from the frozen M20/M1 contract. It does not change
 production workflows, managed Reference components, old locks, old profiles or
 the Plan/Simulate interface. All native/execution/publication flags remain false.

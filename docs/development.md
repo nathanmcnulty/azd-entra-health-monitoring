@@ -17,10 +17,10 @@ and Pester versions and rejects empty, skipped, inconclusive or unexecuted tests
 CI selects a SHA-256-verified PowerShell 7.6.6 runtime and imports the same exact
 Pester version.
 
-The locked deployment-validation 1.1.1 bundle at Reference revision
-`0c96cc89c554ffc3b3ca82ceda12da6591e816c1` retains its upstream manifest's
-`PowerShellVersion = '7.2'`. That immutable metadata does not change this
-repository's supported 7.6+ tooling requirement. Update the bundle only through a
+The locked deployment-validation 2.0.0 bundle at Reference revision
+`2b2e784ba11822272c0e4b8389976f95afafa9b9` declares
+`PowerShellVersion = '7.6'`, matching this repository's supported tooling.
+Update the bundle only through a
 reviewed canonical component release and lock refresh. Git keeps these locked
 files and permission-evidence sources as LF bytes so Windows checkouts preserve
 the recorded SHA-256 values.

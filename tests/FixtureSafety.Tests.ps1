@@ -140,6 +140,7 @@ Describe 'Owned fixture cleanup' {
     BeforeEach {
         Reset-Fixture
         $script:deleted=$false;$script:scenario='safe';$script:resourceLists=0
+        $script:lockOverride=$null;$script:roleOverride=$null
         Mock Start-Sleep {}
         Mock Arm {
             if($Method-ceq'DELETE'){$script:deleted=$true;if($script:scenario-ceq'lost-delete'){throw 'synthetic lostresponse'};return}
@@ -152,8 +153,8 @@ Describe 'Owned fixture cleanup' {
             }
             if($Path-ceq("$wf`?api-version=2019-05-01")){return @{id=$wf;properties=@{provisioningState='Succeeded'}}}
             if($Path-like'*/runs?*'){return @{value=@(@{id=$wf+'/runs/exact-run';properties=@{status=$(if($script:scenario-ceq'active'){'Running'}elseif($script:scenario-ceq'array-status'){,@('Succeeded')}else{'Succeeded'})}})}}
-            if($Path-like'*/locks?*'){return @{value=@(if($script:scenario-ceq'lock'){@{id=$scope+'/providers/Microsoft.Authorization/locks/existing'}})}}
-            if($Path-like'*/roleAssignments?*'){return @{value=@(if($script:scenario-ceq'role'){@{properties=@{scope=$wf}}})}}
+            if($Path-like'*/locks?*'){return @{value=@(if($script:lockOverride){@{id=$script:lockOverride}}elseif($script:scenario-ceq'lock'){@{id=$scope+'/providers/Microsoft.Authorization/locks/existing'}})}}
+            if($Path-like'*/roleAssignments?*'){return @{value=@(if($script:roleOverride){@{properties=@{scope=$script:roleOverride}}}elseif($script:scenario-ceq'role'){@{properties=@{scope=$wf}}})}}
             throw 'Unexpected cleanup route.'
         }
     }
@@ -167,6 +168,27 @@ Describe 'Owned fixture cleanup' {
         $receipt.unknownInvocation=$true
         {Invoke-OwnedFixtureCleanup}|Should -Throw
         Should -Invoke Arm -Times 0 -Exactly
+    }
+    It 'preserves case-varied <kind> at <position> scope before DELETE' -ForEach @(
+        @{kind='lock';position='subscription'},@{kind='lock';position='group'},@{kind='lock';position='descendant'},
+        @{kind='role';position='group'},@{kind='role';position='descendant'}
+    ) {
+        $blockedScope=switch($position){'subscription'{"/subscriptions/$sub"};'group'{$scope};'descendant'{$wf}}
+        if($kind-ceq'lock'){
+            $script:lockOverride=($blockedScope+'/providers/microsoft.authorization/locks/Existing').ToUpperInvariant()
+            {Invoke-OwnedFixtureCleanup}|Should -Throw '*Owned cleanup incomplete*'
+        }else{
+            $script:roleOverride=$blockedScope.ToUpperInvariant()
+            {Invoke-OwnedFixtureCleanup}|Should -Throw '*Owned cleanup incomplete*'
+        }
+        Should -Invoke Arm -Times 0 -Exactly -ParameterFilter {$Method-ceq'DELETE'}
+    }
+    It 'keeps segment boundaries for unrelated locks and permits inherited subscription roles' {
+        $script:lockOverride=($scope+'-unrelated/providers/microsoft.authorization/locks/Existing').ToUpperInvariant()
+        $script:roleOverride=("/subscriptions/$sub").ToUpperInvariant()
+        Invoke-OwnedFixtureCleanup
+        $receipt.cleanup|Should -BeExactly 'absent'
+        Should -Invoke Arm -Times 1 -Exactly -ParameterFilter {$Method-ceq'DELETE'}
     }
     It 'preserves an unknown creation outcome' {
         $receipt.unknownMutation=$true

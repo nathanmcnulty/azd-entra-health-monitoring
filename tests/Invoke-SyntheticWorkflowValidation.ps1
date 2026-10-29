@@ -1,3 +1,4 @@
+#Requires -Version 7.6
 param(
     [Parameter(Mandatory)][string]$SubscriptionId,
     [Parameter(Mandatory)][string]$TenantId,

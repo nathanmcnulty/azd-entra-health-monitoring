@@ -1,3 +1,4 @@
+#Requires -Version 7.6
 $ErrorActionPreference = 'Stop'
 
 & (Join-Path $PSScriptRoot 'prepare-inputs.ps1')

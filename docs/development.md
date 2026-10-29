@@ -2,16 +2,28 @@
 
 Contributor checks should be run from a clean checkout and must not use device-code authentication or tenant writes.
 
-Registered validation requires PowerShell 7.6, Pester 5.7.1, and an explicit
+Registered validation requires PowerShell 7.6+, Pester 6.2.0, and an explicit
 local Bicep executable so an offline run never installs a compiler implicitly:
 
 ```powershell
+Install-Module Pester -RequiredVersion 6.2.0 -Scope CurrentUser -Force
 ./scripts/Test-Repository.ps1 -BicepPath C:\path\to\bicep.exe
 ```
 
 The command parses PowerShell and JSON, verifies every locked component hash,
 runs the full test suite, and compiles the Bicep template. It performs no Azure,
-Graph, connector, workflow, or delivery operation.
+Graph, connector, workflow, or delivery operation. It records the actual runtime
+and Pester versions and rejects empty, skipped, inconclusive or unexecuted tests.
+CI selects a SHA-256-verified PowerShell 7.6.6 runtime and imports the same exact
+Pester version.
+
+The locked deployment-validation 1.1.1 bundle at Reference revision
+`0c96cc89c554ffc3b3ca82ceda12da6591e816c1` retains its upstream manifest's
+`PowerShellVersion = '7.2'`. That immutable metadata does not change this
+repository's supported 7.6+ tooling requirement. Update the bundle only through a
+reviewed canonical component release and lock refresh. Git keeps these locked
+files and permission-evidence sources as LF bytes so Windows checkouts preserve
+the recorded SHA-256 values.
 
 Validate README links and ensure the root quickstart remains the exact default-branch `azd init -t` command. A real `azd init`/`azd up` smoke test requires an administrator's explicit Azure and Teams consent and is outside documentation-only validation. Publish changes through the default branch after local checks and hosted CI.
 

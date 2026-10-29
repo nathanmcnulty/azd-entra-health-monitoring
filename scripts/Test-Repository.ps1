@@ -35,9 +35,10 @@ foreach ($component in @($lock.components)) {
 # Existing repository suites rely on ordinary missing-property behavior. Do not
 # inherit a caller's strict-mode setting into the shared Pester run.
 Set-StrictMode -Off
-Import-Module Pester -RequiredVersion 5.7.1 -Force
+Import-Module Pester -RequiredVersion 6.2.0 -Force -ErrorAction Stop
+Write-Output "PowerShell $($PSVersionTable.PSVersion); .NET $([Environment]::Version); Pester $((Get-Module Pester).Version)"
 $pester = Invoke-Pester -Path (Join-Path $repositoryRoot 'tests') -PassThru
-if ($pester.Result -ne 'Passed') { throw "Pester validation failed: $($pester.Result)." }
+if ($null -eq $pester -or $pester.Result -ne 'Passed' -or $pester.TotalCount -eq 0 -or $pester.SkippedCount -or $pester.InconclusiveCount -or $pester.NotRunCount) { throw 'Every registered Pester test must pass without omissions.' }
 
 & $BicepPath build (Join-Path $repositoryRoot 'infra/main.bicep') --stdout | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Bicep validation failed with exit code $LASTEXITCODE." }

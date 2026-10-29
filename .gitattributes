@@ -1,1 +1,3 @@
 /scripts/Initialize-GraphClientState.ps1 text eol=lf
+/scripts/Health.Validation.psm1 text eol=lf
+/scripts/vendor/Azd.DeploymentValidation/* text eol=lf

@@ -17,7 +17,7 @@
       "rationale": "Preprovision inspects the selected resource group and creates it if azd has not yet done so, before creating the environment-bound Key Vault.",
       "evidenceState": "code",
       "evidence": [
-        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "0b82870995384b217c59163cb4105219c76d993b65050c7e30724e4778a1ebea" }
+        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "92dbf45d0a9b5f0c62ba55e0fe99da1fa624320715dda39bfb7f32f7868e5758" }
       ]
     },
     {
@@ -32,7 +32,7 @@
       "rationale": "Preprovision creates or verifies the exact vault and grants the selected operator only secret get/set access through a vault access policy during initial bootstrap.",
       "evidenceState": "code",
       "evidence": [
-        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "0b82870995384b217c59163cb4105219c76d993b65050c7e30724e4778a1ebea" }
+        { "path": "scripts/Initialize-GraphClientState.ps1", "sha256": "92dbf45d0a9b5f0c62ba55e0fe99da1fa624320715dda39bfb7f32f7868e5758" }
       ]
     },
     {
@@ -47,7 +47,7 @@
       "rationale": "The optional read-only deployment validator reads the existing connection status. It does not authorize, modify, or send through the connection and does not assign this permission.",
       "evidenceState": "code",
       "evidence": [
-          { "path": "scripts/Health.Validation.psm1", "sha256": "be84acd736211043330577cf5a6f101ec3afd3c832cb5ce2d182fb258adb6874" }
+          { "path": "scripts/Health.Validation.psm1", "sha256": "9a2ce3943d3e54f214f133b8d2942f0e3aff113502e8d5e670dd7e52ded038f3" }
       ]
     },
     {
@@ -62,7 +62,7 @@
       "rationale": "The optional read-only deployment validator uses typed exact-resource endpoint construction to read latest run metadata and the safe Compose_expiration action. That action is treated only as requested-expiration evidence and never as authoritative Graph subscription freshness. The validator avoids subscription-create outputs and does not start, change, or delete a workflow or Graph subscription.",
       "evidenceState": "code",
       "evidence": [
-          { "path": "scripts/Health.Validation.psm1", "sha256": "be84acd736211043330577cf5a6f101ec3afd3c832cb5ce2d182fb258adb6874" }
+          { "path": "scripts/Health.Validation.psm1", "sha256": "9a2ce3943d3e54f214f133b8d2942f0e3aff113502e8d5e670dd7e52ded038f3" }
       ]
     }
   ],

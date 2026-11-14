@@ -576,4 +576,11 @@ Describe 'HEALTH-005 source authority boundaries' {
         $workflow | Should -Match '\[Environment\]::Is64BitProcess'
         $validation | Should -BeGreaterThan $guard
     }
+
+    It 'requires the PowerShell 7.6 baseline for the owned lifecycle fixture module' {
+        $root = Split-Path -Parent $PSScriptRoot
+        $modulePath = Join-Path $root 'scripts/Health.LifecycleFixture.psm1'
+
+        (Get-Content -LiteralPath $modulePath -TotalCount 1) | Should -BeExactly '#Requires -Version 7.6'
+    }
 }

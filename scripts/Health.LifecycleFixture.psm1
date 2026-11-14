@@ -1,3 +1,5 @@
+#Requires -Version 7.6
+
 # Deterministic, local-only fixture generator. This module has no Azure CLI, network,
 # Azure, Graph, Teams, or workflow runtime dependencies.
 Set-StrictMode -Version Latest
